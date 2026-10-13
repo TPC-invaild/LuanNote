@@ -9,10 +9,12 @@
  */
 
 //基础接口地址
+import { ORDER } from "./constant.js";
+
 export const API_BASE = "/api"
 
 //单次请求超时时间(ms)
 export const REQUEST_TIMEOUT=10000
 
 //列表默认排序 
-export const DEFAULT_ORDER= 'desc'
+export const DEFAULT_ORDER= ORDER.NEWSET

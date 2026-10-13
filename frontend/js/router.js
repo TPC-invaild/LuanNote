@@ -1,6 +1,6 @@
 // ===========js/router.js=======
 
-import { ROUTES, DEFAULT_ROUTE } from "./constant";
+import { ROUTES, DEFAULT_ROUTE } from "./constant.js";
 
 
 /**
@@ -9,7 +9,7 @@ import { ROUTES, DEFAULT_ROUTE } from "./constant";
  */
 export function resolverRoute() {
     const raw = window.location.hash.slice(1) || DEFAULT_ROUTE ;
-    const path = raw.startsWith("/") ? raw : $`/${raw}` ;
+    const path = raw.startsWith("/") ? raw : `/${raw}` ;
     const config = ROUTES[path]; 
 
     if (!config){

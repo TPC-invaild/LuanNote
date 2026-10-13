@@ -18,7 +18,7 @@ export const STATUS=Object.freeze({
 
 //Tag界面文案
 export const TAG_LABELS=Object.freeze({
-    [TAG.TODOLIST]:"代办",
+    [TAG.TODOLIST]:"待办",
     [TAG.IMAGINATION]: "想法"
 });
 

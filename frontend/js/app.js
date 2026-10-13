@@ -1,10 +1,10 @@
-// ========js/api.js=======
+// ========js/app.js=======
 // 应用入口：绑定路由，按路由配置分发到对应页面。
 
 // 本阶段页面内容为占位，用于验证路由与目录结构。
 
-import { startRouter } from "./router";
-import { NAV_ITEMS } from "./constant";
+import { startRouter } from "./router.js";
+import { NAV_ITEMS } from "./constant.js";
 
 const app = document.getElementById("app")
 
@@ -14,7 +14,7 @@ if(!app){
 
 // -------------------- 主页-----------------------
 function renderHome() {
-    app.replaceChild();
+    app.replaceChildren();
 
     const wrap = document.createElement("div")
     wrap.className = "home";
@@ -46,7 +46,7 @@ function renderHome() {
 // -------------------列表页-----------------
 function renderItemsPage(route) {
     const {config} = route;
-    app.replaceChild();
+    app.replaceChildren();
     
     const wrap = document.createElement("section");
     wrap.className = "item-page";
@@ -66,6 +66,7 @@ function renderItemsPage(route) {
     addButton.type = "button";
     addButton.className = "btn-add";
     addButton.textContent = "记录此刻";
+    addButton.dataset.action = "add-note";
 
     head.append(back,title,addButton);
 
@@ -100,12 +101,13 @@ function render(route) {
 // --------------全局委托-------------
 
 app.addEventListener("click",(event) => {
+    if (!(event.target instanceof Element)) return;
     const trigger = event.target.closest("[data-action]");
     if(!trigger) return;
 
     switch (trigger.dataset.action){
         case "add-note":
-            app.textContent = "建设中..."
+            window.alert("记录功能建设中...");
             break;
         default:
             break;
