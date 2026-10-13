@@ -1,0 +1,7 @@
+{
+    "Item":{
+        "DATA":"database/item.json",
+        "TMP": "database/item.json.tmp",
+        "BAK": "database/item.json.bak"
+    }
+}
