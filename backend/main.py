@@ -1,11 +1,11 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-from backend.Models.ItemModel import Item
-from backend.routers.items import *
+from contextlib import asynccontextmanager
+from backend.routers import items
+from backend.Store.ItemStore import load
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
-    load_store()
+    load()
     yield
 
 app = FastAPI(

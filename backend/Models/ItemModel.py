@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import datetime
-import json
+from time import time_ns
 
 
 class Item(BaseModel):
@@ -9,7 +9,7 @@ class Item(BaseModel):
     contact:str = Field(...,min_length=1)
     status:Literal["CREATE","CANCEL","FAILED","DONE","RUNNING"]
     tag:Literal["TODOLIST","IMAGINATION"]
-    ID:int = Field(default_factory=基于时间生成的字段)
+    ID:int = Field(default_factory=lambda: time_ns() // 1_000)
     
     model_config={
         "extra":"forbid",

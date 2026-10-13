@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LuanNote · 后端逻辑说明</title>
+<style>
+:root{--ink:#203047;--muted:#66758a;--line:#dce4eb;--accent:#176f70;--pale:#edf7f5}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:#f5f7fa;color:var(--ink);font:16px/1.8 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.layout{max-width:1380px;margin:auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px;padding:48px 40px}aside{position:sticky;top:32px;align-self:start}aside b{display:block;font-size:19px;margin-bottom:20px}nav a{display:block;padding:8px 12px;border-left:2px solid var(--line);font-size:14px}nav a:hover{background:var(--pale);border-color:var(--accent)}main{min-width:0;max-width:1000px}.eyebrow{font-size:12px;letter-spacing:3px;color:var(--accent);font-weight:700}h1{font-size:42px;line-height:1.25;margin:12px 0 20px;letter-spacing:-1px}h2{font-size:25px;margin:0 0 18px}h3{font-size:18px;margin:0 0 12px}p{margin:10px 0}.lead{font-size:18px;color:var(--muted);max-width:760px}.meta{font-size:13px;color:var(--muted);margin:22px 0 35px}section{background:white;border:1px solid var(--line);border-radius:16px;padding:30px;margin:0 0 24px}section h2 span{color:var(--accent);font-size:14px;margin-right:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.card{border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}.small{font-size:14px;color:var(--muted)}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{font-size:.88em;background:#eef2f6;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{background:#172638;color:#e4edf4;padding:20px;border-radius:10px;font-size:13px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}.note{border-left:3px solid var(--accent);background:var(--pale);padding:13px 17px;margin-top:18px;font-size:14px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}th{background:#f3f6f8;color:var(--muted);font-weight:600}th,td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}.flow{display:flex;align-items:stretch;gap:9px;margin:22px 0}.node{flex:1;border:1px solid #b9d8d4;border-radius:10px;background:var(--pale);padding:15px 10px;text-align:center;font-size:14px}.node strong{display:block}.node small{display:block;color:var(--muted);font-size:12px}.arrow{align-self:center;color:var(--accent);font-size:22px}.vertical{display:flex;flex-direction:column;align-items:center;gap:6px;margin:20px 0}.vertical .node{width:100%;max-width:560px}.branches{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:16px}.branch{text-align:center}.branch .node{height:calc(100% - 28px)}.label{font-size:12px;color:var(--muted)}.decision{border:1px dashed #a7884a;background:#fff8e8;border-radius:30px;padding:12px 28px;text-align:center;font-size:14px}.return{background:#eff3fb;border-color:#c5d3eb}.caption{color:var(--muted);font-size:12px;text-align:center}footer{font-size:13px;color:var(--muted);padding:10px 0 35px}ul{padding-left:22px}.pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:20px;background:var(--pale);color:var(--accent)}@media(max-width:1000px){.layout{grid-template-columns:170px minmax(0,1fr);gap:24px;padding:28px 20px}.grid{grid-template-columns:1fr}.flow{flex-direction:column}.arrow{transform:rotate(90deg)}}@media(max-width:700px){.layout{display:block;padding:20px 14px}aside{position:static;margin-bottom:28px}nav{display:flex;flex-wrap:wrap;gap:4px}nav a{padding:4px 9px}h1{font-size:32px}section{padding:22px 18px}.branches{grid-template-columns:1fr}td,th{padding:9px}}@media print{body{background:white;font-size:11pt}.layout{display:block;padding:0}aside{display:none}main{max-width:none}section{break-inside:avoid;border-radius:0;padding:20px}pre{background:#f3f5f8;color:#203047}h1{font-size:28pt}a{color:inherit}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside><b>LuanNote <span class="pill">Backend</span></b><nav aria-label="文档目录">
+<a href="#overview">01 · 整体结构</a><a href="#startup">02 · 启动与加载</a><a href="#model">03 · 数据与校验</a><a href="#api">04 · 接口一览</a><a href="#crud">05 · 增删改查</a><a href="#storage">06 · 保存与备份</a><a href="#boundaries">07 · 实现边界</a>
+</nav></aside>
+<main>
+<header><div class="eyebrow">CODE READING / 后端阅读指南</div><h1>从一次请求，理解后端</h1><p class="lead">LuanNote 使用 FastAPI 接收条目操作，以 Pydantic 校验数据，通过内存字典和本地 JSON 文件保存待办事项与想法。</p><p class="meta">依据当前 backend 代码整理 · 2026-10-13 · 伪代码用于解释逻辑，非可执行代码 · 本页可离线阅读</p></header>
+<section id="overview"><h2><span>01</span>整体结构</h2><p>项目将请求处理、数据约束与文件存储分成三层。读取通常使用缓存；创建、修改和删除先写入磁盘，再更新缓存。</p>
+<div class="flow" aria-label="整体请求流程"><div class="node"><strong>客户端</strong><small>HTTP 请求</small></div><div class="arrow">→</div><div class="node"><strong>FastAPI 路由</strong><small>解析与校验输入</small></div><div class="arrow">→</div><div class="node"><strong>ItemStore</strong><small>查询或构建新数据</small></div><div class="arrow">→</div><div class="node"><strong>缓存 / JSON</strong><small>读取与持久化</small></div></div>
+<div class="table-wrap"><table><thead><tr><th>文件</th><th>职责</th></tr></thead><tbody>
+<tr><td><code>backend/main.py</code></td><td>创建应用，启动时加载数据，挂载条目路由，提供根路径响应。</td></tr>
+<tr><td><code>backend/Models/ItemModel.py</code></td><td>定义完整条目 Item 的字段、默认值和校验规则。</td></tr>
+<tr><td><code>backend/routers/items.py</code></td><td>定义创建与更新请求模型，将 HTTP 请求转换为存储操作。</td></tr>
+<tr><td><code>backend/Store/ItemStore.py</code></td><td>管理缓存、线程锁、CRUD、文件读取和保存。</td></tr>
+<tr><td><code>backend/share/dataPath.json</code></td><td>指定主数据、临时数据和备份文件的相对路径。</td></tr>
+</tbody></table></div></section>
+<section id="startup"><h2><span>02</span>启动与首次加载</h2><div class="grid"><div><h3>应用生命周期</h3><pre>导入存储模块：
+    从当前源码位置确定项目根目录
+    读取 dataPath.json，解析三个文件路径
+    建立可重入锁 RLock
+    缓存 ← 未加载（None）
+
+创建 FastAPI 应用，挂载 /items 路由
+
+启动时：
+    调用 load()
+    开始处理请求
+
+关闭时：
+    没有额外的保存或清理步骤</pre></div><div><h3>load() 的决策流程</h3><div class="vertical"><div class="node">进入线程锁</div><div class="arrow">↓</div><div class="decision">缓存是否为 None？</div><div class="branches"><div class="branch"><div class="label">否 ↓</div><div class="node return">直接返回已有缓存</div></div><div class="branch"><div class="label">是 ↓</div><div class="node">读取磁盘<br>不存在 → 空字典<br>存在 → JSON 解析与 Item 校验<br>按 ID 建立字典，写入缓存并返回</div></div></div></div><p class="caption">离开 load() 时释放锁；后续读取复用缓存。</p></div></div><div class="note">“未加载”的 <code>None</code> 与“已加载但无条目”的 <code>{}</code> 不同。空字典也会被缓存，不会因此反复读取磁盘。</div></section>
+<section id="model"><h2><span>03</span>数据模型与校验</h2><p>完整条目只有以下五个字段。字段名 <code>contact</code> 用于条目内容；标识符使用大写 <code>ID</code>。</p><div class="table-wrap"><table><thead><tr><th>字段</th><th>类型</th><th>规则与来源</th></tr></thead><tbody>
+<tr><td><code>time</code></td><td>字符串</td><td>默认是本地当前时间的 ISO 格式，精确到秒、不含时区；更新时保留原值。</td></tr>
+<tr><td><code>contact</code></td><td>字符串</td><td>去除首尾空白后至少一个字符。</td></tr>
+<tr><td><code>status</code></td><td>枚举字符串</td><td>CREATE、CANCEL、FAILED、DONE、RUNNING。创建请求默认 CREATE；完整 Item 模型本身无此默认值。</td></tr>
+<tr><td><code>tag</code></td><td>枚举字符串</td><td>TODOLIST 或 IMAGINATION；创建时必填。</td></tr>
+<tr><td><code>ID</code></td><td>整数</td><td>默认使用 time_ns() ÷ 1000 的整数部分；创建时若与已有键冲突，改用当前最大 ID + 1。</td></tr>
+</tbody></table></div>
+<div class="grid" style="margin-top:22px"><div class="card"><h3>创建请求 · ItemCreat</h3><p>接收 <code>contact</code>、<code>status</code>、<code>tag</code>。未提供 status 时填入 CREATE。</p><p class="small">使用 Pydantic 默认额外字段策略：多余字段被忽略。因此请求中的 ID、time 不会传入存储层。</p></div><div class="card"><h3>更新请求 · ItemPatch</h3><p>三个业务字段均可省略，仅传入的字段参与更新；禁止额外字段。</p><p class="small">省略 ≠ null：显式传入 null 返回 422；空对象返回 400；不能通过此接口修改 ID 或 time。</p></div></div><div class="note">Item 禁止额外字段，去除字符串首尾空白，并启用 frozen 与 from_attributes。更新不会直接修改旧对象，而是合并字段后创建一个新的 Item。状态仅校验枚举值，没有规定状态转换顺序。</div></section>
+<section id="api"><h2><span>04</span>接口一览</h2><div class="table-wrap"><table><thead><tr><th>方法与路径</th><th>行为</th><th>成功结果</th></tr></thead><tbody>
+<tr><td><code>GET /</code></td><td>基础响应</td><td>200 · {"message":"hello world!"}</td></tr>
+<tr><td><code>GET /items</code></td><td>可按 status、tag 查询参数筛选</td><td>200 · Item 数组，按 time 升序</td></tr>
+<tr><td><code>GET /items/{item_id}</code></td><td>按整数 ID 查询单条</td><td>200 · Item</td></tr>
+<tr><td><code>POST /items</code></td><td>创建条目</td><td>201 · 新 Item</td></tr>
+<tr><td><code>PATCH /items/{item_id}</code></td><td>局部更新条目</td><td>200 · 更新后的 Item</td></tr>
+<tr><td><code>DELETE /items/{item_id}</code></td><td>删除条目</td><td>204 · 无响应正文</td></tr>
+</tbody></table></div><p class="small">查询、更新、删除的目标不存在时返回 404。请求模型或路径整数校验失败时返回 422。列表过滤参数目前是普通字符串：空字符串不筛选，不匹配的值返回空列表。FastAPI 默认提供 /docs、/redoc 和 /openapi.json。</p></section>
+<section id="crud"><h2><span>05</span>增删改查：逐步展开</h2><div class="grid"><div class="card"><h3>读取 · list_items / get_item</h3><pre>查询列表(status, tag)：
+    条目集合 ← load() 的所有值
+    若 status 非空：保留状态相等的条目
+    若 tag 非空：保留分类相等的条目
+    按 time 升序排序并返回
+
+查询单条(ID)：
+    条目 ← load().get(ID)
+    若不存在：路由返回 404
+    否则：路由返回条目</pre></div><div class="card"><h3>创建 · creat_item</h3><pre>路由校验创建请求并转为字典
+
+进入线程锁：
+    新字典 ← 复制 load() 的结果
+    新条目 ← Item(请求字段)
+    若新 ID 已存在：
+        用「最大 ID + 1」重新构建条目
+    新字典[新条目.ID] ← 新条目
+    save(新字典)
+    返回新条目
+
+路由返回 201</pre></div><div class="card"><h3>更新 · update_item</h3><pre>路由只提取显式提供的字段
+若没有字段：返回 400
+若任一字段为 null：返回 422
+
+进入线程锁：
+    新字典 ← 复制 load() 的结果
+    旧条目 ← 新字典.get(ID)
+    若不存在：返回 None → 路由返回 404
+    合并数据 ← 旧字段 + 更新字段
+    强制保留原 ID 和 time
+    新条目 ← Item(合并数据)，重新校验
+    新字典[ID] ← 新条目
+    save(新字典)
+    返回新条目 → 路由返回 200</pre></div><div class="card"><h3>删除 · delete_item</h3><pre>进入线程锁：
+    新字典 ← 复制 load() 的结果
+    若 ID 不存在：
+        返回 False → 路由返回 404
+    从新字典移除 ID
+    save(新字典)
+    返回 True
+
+路由返回 204，无正文</pre><p class="small">修改操作复制字典后再保存。旧 Item 不会原地修改，缓存也不会在磁盘保存成功前替换。</p></div></div>
+<h3 style="margin-top:26px">局部更新的分支流程</h3><div class="vertical"><div class="node">PATCH 请求 → 请求模型校验</div><div class="arrow">↓</div><div class="decision">输入是否有效？</div><div class="branches"><div class="branch"><div class="label">否 ↓</div><div class="node return">无更新字段 → 400<br>非法值 / 额外字段 / null → 422</div></div><div class="branch"><div class="label">是 ↓</div><div class="node">按 ID 查找条目<br>不存在 → 404<br>存在 → 合并并重新校验 → 保存 → 200</div></div></div></div></section>
+<section id="storage"><h2><span>06</span>保存、备份与缓存</h2><p>内存中保存 <code>{ID: Item}</code> 字典；磁盘中保存由条目对象组成的 JSON 数组。配置路径均相对于项目根目录。</p><div class="table-wrap"><table><thead><tr><th>配置键</th><th>文件</th><th>用途</th></tr></thead><tbody><tr><td>DATA</td><td><code>database/item.json</code></td><td>当前持久化数据</td></tr><tr><td>TMP</td><td><code>database/item.json.tmp</code></td><td>即将写入的新版本</td></tr><tr><td>BAK</td><td><code>database/item.json.bak</code></td><td>覆盖主文件前复制的旧版本</td></tr></tbody></table></div>
+<div class="flow"><div class="node"><strong>序列化</strong><small>Item → JSON 数组</small></div><div class="arrow">→</div><div class="node"><strong>写入 TMP</strong><small>UTF-8，保留中文</small></div><div class="arrow">→</div><div class="node"><strong>备份旧 DATA</strong><small>存在时复制到 BAK</small></div><div class="arrow">→</div><div class="node"><strong>替换 DATA</strong><small>os.replace(TMP, DATA)</small></div><div class="arrow">→</div><div class="node"><strong>更新缓存</strong><small>指向新字典</small></div></div>
+<pre>save(新字典)：
+    进入可重入锁：
+        数据数组 ← 逐个 Item 转为 JSON 可序列化对象
+        将数据数组写入 TMP（缩进 2，中文不转义）
+        若 DATA 存在：复制 DATA 到 BAK
+        用 TMP 替换 DATA
+        缓存 ← 新字典</pre><div class="note">CRUD、load() 和 save() 都可能进入同一把锁，所以使用允许同一线程重复获取的 RLock。锁保护单进程内的操作；主文件替换是保存流程的最后一个磁盘步骤，缓存仅在该步骤成功后更新。</div></section>
+<section id="boundaries"><h2><span>07</span>阅读时需要知道的实现边界</h2><ul><li><strong>缓存不会自动刷新：</strong>首次加载后，手动修改磁盘文件不会立即反映到内存。</li><li><strong>线程锁不跨进程：</strong>多个服务进程拥有独立缓存，当前实现没有跨进程写入协调。</li><li><strong>备份不会自动恢复：</strong>代码会写入 BAK，但读取时仅使用 DATA；损坏 JSON、模型校验失败和磁盘错误会向上抛出，没有专门的恢复逻辑。</li><li><strong>目录需要已存在：</strong>保存逻辑不会创建 database 目录。主文件不存在时可从空数据开始。</li><li><strong>整份数据读写：</strong>创建、更新或删除都会重新写入整个 JSON 数组；没有分页或增量写入。</li><li><strong>时间是字符串：</strong>排序直接比较 time 字符串，当前模型没有对已有文件里的时间做日期格式校验。</li></ul><p class="small">这些是当前源码行为的说明，不代表本次新增了功能或更改了后端实现。</p></section>
+<footer>LuanNote · Backend Logic Reference · 文档范围：backend 下的 Python 源码与 dataPath.json</footer>
+</main></div>
+</body>
+</html>

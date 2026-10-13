@@ -1,11 +1,13 @@
-import json, os, threading, sys
+import json, os, threading
+from shutil import copyfile
 from pathlib import Path 
 from backend.Models.ItemModel import Item
 
-shareItemJson=json.load(open("./backend/share/dataPath.json"))
-DATA=Path(shareItemJson["Item"]["DATA"])
-TMP=Path(shareItemJson["Item"]["TMP"])
-BAK=Path(shareItemJson["Item"]["BAK"])
+_root = Path(__file__).resolve().parents[2]
+shareItemJson=json.loads((_root / "backend/share/dataPath.json").read_text(encoding="utf-8"))
+DATA=_root / shareItemJson["Item"]["DATA"]
+TMP=_root / shareItemJson["Item"]["TMP"]
+BAK=_root / shareItemJson["Item"]["BAK"]
 
 _lock = threading.RLock()
 _cache :dict[int,Item] | None = None
@@ -13,8 +15,9 @@ _cache :dict[int,Item] | None = None
 def _read_disk() -> dict[int, Item]:
     if not DATA.exists():
         return {}
-    raw = json.loads(DATA)
-    return [index, raw]
+    raw = json.loads(DATA.read_text(encoding="utf-8"))
+    items = [Item.model_validate(payload) for payload in raw]
+    return {item.ID: item for item in items}
 
 def load() -> dict[int,Item]:
     global _cache
@@ -28,7 +31,7 @@ def _atomic_write(items:dict[int,Item]) -> None:
 
     TMP.write_text(json.dumps(data,ensure_ascii=False,indent=2),'utf-8')
     if DATA.exists():
-        os.replace(DATA,BAK)
+        copyfile(DATA,BAK)
     os.replace(TMP,DATA)
 
 def save(items:dict[int,Item]) -> None:
@@ -53,7 +56,9 @@ def creat_item(payload:dict) -> Item:
     with _lock:
         items=dict(load())
         item =Item(**payload)
-        items[items.__len__+1]=item
+        if item.ID in items:
+            item = Item(**{**payload, "ID": max(items) + 1})
+        items[item.ID]=item
         save(items)
         return item
 
@@ -63,7 +68,7 @@ def update_item(item_id:int,patch:dict) ->Item |None:
         old = items.get(item_id)
         if old is None:
             return None
-        merged = {**old.model_dump(),**patch,"id":item_id}
+        merged = {**old.model_dump(),**patch,"ID":item_id}
         merged["time"]=old.time
         new = Item(**merged)
         items[item_id]=new
@@ -73,7 +78,7 @@ def update_item(item_id:int,patch:dict) ->Item |None:
 def delete_item(item_id:int) -> bool:
     with _lock:
         items= dict(load())
-        if item_id is None:
+        if item_id not in items:
             return False
         del items[item_id]
         save(items)
