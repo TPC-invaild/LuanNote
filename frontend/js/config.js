@@ -11,7 +11,7 @@
 //基础接口地址
 import { ORDER } from "./constant.js";
 
-export const API_BASE = "/api"
+export const API_BASE = "http://127.0.0.1:8001"
 
 //单次请求超时时间(ms)
 export const REQUEST_TIMEOUT=10000

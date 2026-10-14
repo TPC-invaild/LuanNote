@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LuanNote · 前端第一阶段逻辑说明</title><style>
+:root{--ink:#203047;--muted:#66758a;--line:#dce4eb;--accent:#176f70;--pale:#edf7f5}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:#f5f7fa;color:var(--ink);font:16px/1.8 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.layout{max-width:1380px;margin:auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px;padding:48px 40px}aside{position:sticky;top:32px;align-self:start}aside b{display:block;font-size:19px;margin-bottom:20px}nav a{display:block;padding:8px 12px;border-left:2px solid var(--line);font-size:14px}nav a:hover{background:var(--pale);border-color:var(--accent)}main{min-width:0;max-width:1000px}.eyebrow{font-size:12px;letter-spacing:3px;color:var(--accent);font-weight:700}h1{font-size:42px;line-height:1.25;margin:12px 0 20px;letter-spacing:-1px}h2{font-size:25px;margin:0 0 18px}h3{font-size:18px;margin:0 0 12px}p{margin:10px 0}.lead{font-size:18px;color:var(--muted);max-width:760px}.meta{font-size:13px;color:var(--muted);margin:22px 0 35px}section{background:white;border:1px solid var(--line);border-radius:16px;padding:30px;margin:0 0 24px}section h2 span{color:var(--accent);font-size:14px;margin-right:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.card{border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}.small{font-size:14px;color:var(--muted)}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{font-size:.88em;background:#eef2f6;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{background:#172638;color:#e4edf4;padding:20px;border-radius:10px;font-size:13px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}.note{border-left:3px solid var(--accent);background:var(--pale);padding:13px 17px;margin-top:18px;font-size:14px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}th{background:#f3f6f8;color:var(--muted);font-weight:600}th,td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}.flow{display:flex;align-items:stretch;gap:9px;margin:22px 0}.node{flex:1;border:1px solid #b9d8d4;border-radius:10px;background:var(--pale);padding:15px 10px;text-align:center;font-size:14px}.node strong{display:block}.node small{display:block;color:var(--muted);font-size:12px}.arrow{align-self:center;color:var(--accent);font-size:22px}.vertical{display:flex;flex-direction:column;align-items:center;gap:6px;margin:20px 0}.vertical .node{width:100%;max-width:560px}.branches{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:16px}.branch{text-align:center}.branch .node{height:calc(100% - 28px)}.label{font-size:12px;color:var(--muted)}.decision{border:1px dashed #a7884a;background:#fff8e8;border-radius:30px;padding:12px 28px;text-align:center;font-size:14px}.return{background:#eff3fb;border-color:#c5d3eb}.caption{color:var(--muted);font-size:12px;text-align:center}footer{font-size:13px;color:var(--muted);padding:10px 0 35px}ul{padding-left:22px}.pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:20px;background:var(--pale);color:var(--accent)}@media(max-width:1000px){.layout{grid-template-columns:170px minmax(0,1fr);gap:24px;padding:28px 20px}.grid{grid-template-columns:1fr}.flow{flex-direction:column}.arrow{transform:rotate(90deg)}}@media(max-width:700px){.layout{display:block;padding:20px 14px}aside{position:static;margin-bottom:28px}nav{display:flex;flex-wrap:wrap;gap:4px}nav a{padding:4px 9px}h1{font-size:32px}section{padding:22px 18px}.branches{grid-template-columns:1fr}td,th{padding:9px}}@media print{body{background:white;font-size:11pt}.layout{display:block;padding:0}aside{display:none}main{max-width:none}section{break-inside:avoid;border-radius:0;padding:20px}pre{background:#f3f5f8;color:#203047}h1{font-size:28pt}a{color:inherit}.grid{grid-template-columns:1fr}}
+</style></head><body>
+<div class="layout"><aside><b>LuanNote <span class="pill">Frontend · P1</span></b><nav aria-label="文档目录">
+<a href="#scope">01 · 文件与职责</a><a href="#boot">02 · 启动流程</a><a href="#router">03 · Hash 路由</a><a href="#render">04 · 页面渲染</a><a href="#click">05 · 点击交互</a><a href="#config">06 · 常量与配置</a><a href="#example">07 · 阅读示例与边界</a></nav></aside>
+<main><header><div class="eyebrow">CODE READING / 前端第一阶段</div><h1>从地址变化，到页面渲染</h1><p class="lead">当前前端是原生 JavaScript 编写的单页占位框架：Hash 决定页面，路由配置决定标题与分类，DOM 操作生成界面。</p><p class="meta">依据当前 frontend 源码整理 · 2026-10-13 · 中文伪代码 + 流程图 · 可离线阅读</p></header>
+<section id="scope"><h2><span>01</span>文件与职责</h2><p>本阶段已经实现首页、三个分类入口、列表占位页和按钮提示。尚未读取或提交条目数据。</p><div class="table-wrap"><table><thead><tr><th>文件 / 目录</th><th>职责与现状</th></tr></thead><tbody>
+<tr><td><code>frontend/index.html</code></td><td>提供 #app 挂载点，设置中文、UTF-8 与移动端 viewport，以 ES Module 加载 app.js；禁用 JavaScript 时显示提示。</td></tr>
+<tr><td><code>frontend/js/app.js</code></td><td>获取挂载点、渲染页面、处理委托点击、启动路由。</td></tr>
+<tr><td><code>frontend/js/router.js</code></td><td>解析 Hash、处理未知路径、监听地址变化，导出跳转与停止监听能力。</td></tr>
+<tr><td><code>frontend/js/constant.js</code></td><td>集中定义分类、状态、标签、排序、路由表及首页导航。</td></tr>
+<tr><td><code>frontend/js/config.js</code></td><td>定义 API 地址、超时与默认排序；当前入口没有导入此模块。</td></tr>
+<tr><td><code>css/</code> 与 <code>js/api/</code>、<code>js/components/</code>、<code>js/pages/</code>、<code>js/state/</code>、<code>js/utils/</code></td><td>目前为空目录，尚无对应实现。index.html 也未挂载样式表。</td></tr>
+</tbody></table></div><div class="flow"><div class="node"><strong>index.html</strong><small>加载入口</small></div><div class="arrow">→</div><div class="node"><strong>app.js</strong><small>导入路由与导航</small></div><div class="arrow">→</div><div class="node"><strong>router.js</strong><small>导入路由常量</small></div><div class="arrow">→</div><div class="node"><strong>constant.js</strong><small>统一配置来源</small></div></div><p class="caption">模块依赖示意；app.js 也直接从 constant.js 读取 NAV_ITEMS。config.js 单独依赖 ORDER。</p></section>
+<section id="boot"><h2><span>02</span>启动：先绑定，再首次渲染</h2><div class="grid"><div><h3>入口伪代码</h3><pre>浏览器读取 index.html
+加载 js/app.js 及其依赖模块
+
+app ← 查找 id 为 app 的元素
+若不存在：
+    抛出错误，停止启动
+
+在 app 上绑定一个 click 监听器
+调用 startRouter(render)：
+    监听 window 的 hashchange
+    立即解析当前路由并调用 render
+    返回停止监听函数</pre></div><div><h3>启动流程图</h3><div class="vertical"><div class="node">HTML → ES Module 入口</div><div class="arrow">↓</div><div class="decision">找到 #app？</div><div class="branches"><div class="branch"><div class="label">否 ↓</div><div class="node return">抛出错误<br>提示检查 index.html</div></div><div class="branch"><div class="label">是 ↓</div><div class="node">绑定点击委托<br>启动路由监听<br>立即执行一次 render</div></div></div></div></div></div><div class="note">首次显示不依赖 hashchange 事件。startRouter 会主动调用一次处理函数，因此空 Hash 或直接打开分类地址都能得到页面。app.js 当前未保存返回的停止监听函数。</div></section>
+<section id="router"><h2><span>03</span>Hash 路由：地址如何决定页面</h2><p>路由只处理地址中的 <code>#</code> 片段，例如 <code>#/todolist</code>。导航链接改变 Hash，路由监听器收到变化后重新渲染。</p><div class="table-wrap"><table><thead><tr><th>Hash</th><th>page</th><th>title</th><th>fixedTag</th></tr></thead><tbody><tr><td><code>#/</code></td><td>home</td><td>首页</td><td>null</td></tr><tr><td><code>#/todolist</code></td><td>items</td><td>TODOLIST</td><td>TODOLIST</td></tr><tr><td><code>#/imagination</code></td><td>items</td><td>IMAGINATION</td><td>IMAGINATION</td></tr><tr><td><code>#/total</code></td><td>items</td><td>TOTAL</td><td>null</td></tr></tbody></table></div>
+<div class="grid" style="margin-top:22px"><div class="card"><h3>resolverRoute() · 解析</h3><pre>raw ← 去掉 Hash 开头的 #
+若 raw 为空：raw ← 默认路径 /
+path ← 若缺少开头的 /，则补上
+config ← ROUTES[path]
+
+若找不到 config：
+    返回 { path: /,
+           config: 首页配置,
+           unknown: true }
+否则：
+    返回 { path, config, unknown: false }</pre></div><div class="card"><h3>startRouter(onRoute) · 分发</h3><pre>定义 handle()：
+    route ← resolverRoute()
+    若 route.unknown：
+        replaceState 将当前 Hash 改为 #/
+        route ← 再次解析路由
+    onRoute(route)
+
+监听 hashchange → handle
+立即执行 handle()
+返回一个移除该监听器的函数</pre></div></div>
+<div class="vertical"><div class="node">首次启动 / hashchange</div><div class="arrow">↓</div><div class="node">解析 Hash，补全路径前缀</div><div class="arrow">↓</div><div class="decision">路由表中有该路径？</div><div class="branches"><div class="branch"><div class="label">是 ↓</div><div class="node">将路由交给 render</div></div><div class="branch"><div class="label">否 ↓</div><div class="node">替换当前地址为 #/<br>重新解析 → render 首页</div></div></div></div>
+<h3>navigate(path) · 程序化跳转</h3><pre>规范化路径：确保以 / 开头
+目标 Hash ← # + 路径
+若目标与当前 Hash 相同：直接返回
+否则：设置 window.location.hash
+后续由 hashchange 触发渲染</pre><div class="note">当前页面使用普通链接导航，尚未调用 navigate()。未知地址使用 replaceState 替换当前历史记录，不新增一次首页跳转记录；随后代码主动重新解析并渲染。</div></section>
+<section id="render"><h2><span>04</span>渲染：一个入口，两种页面</h2><pre>render(route)：
+    浏览器标题 ← LuanNote · route.config.title
+    滚动到页面顶部
+    按 config.page 分发：
+        home  → renderHome()
+        items → renderItemsPage(route)
+        其他  → 显示「你迷路啦！」</pre><div class="grid" style="margin-top:22px"><div class="card"><h3>首页 · renderHome()</h3><pre>清空 #app 的子节点
+创建 div.home
+创建标题「LuanNote 当然是乱记啦」
+创建按钮「想什么呢？」
+    data-action ← add-note
+创建 nav.main-nav
+遍历 NAV_ITEMS：
+    创建链接，href ← # + path
+    链接文字 ← label
+将标题、按钮、导航加入容器
+将容器加入 #app</pre></div><div class="card"><h3>列表 · renderItemsPage(route)</h3><pre>清空 #app 的子节点
+创建 section.item-page
+    data-fixed-tag ← fixedTag 或空字符串
+创建 header.item-head：
+    返回首页的链接 → #/
+    标题 ← config.title
+    按钮「记录此刻」
+        data-action ← add-note
+创建占位提示「什么都没有哦.」
+将页头与提示加入容器
+将容器加入 #app</pre></div></div><div class="flow"><div class="node"><strong>清空旧节点</strong><small>replaceChildren()</small></div><div class="arrow">→</div><div class="node"><strong>创建新节点</strong><small>createElement()</small></div><div class="arrow">→</div><div class="node"><strong>写入文本与属性</strong><small>textContent / dataset</small></div><div class="arrow">→</div><div class="node"><strong>挂载到 #app</strong><small>append()</small></div></div><div class="note">三个列表入口共享同一个渲染函数。fixedTag 目前只是写入 DOM 的分类标记，没有实际执行筛选；占位文字也不代表后端确实没有数据。未知路径会回到首页，“你迷路啦！”只用于无法识别的 page 配置。</div></section>
+<section id="click"><h2><span>05</span>点击：通过父节点统一处理</h2><p>点击监听器绑定在持久存在的 <code>#app</code> 上。子页面每次重新生成后，按钮仍可通过事件冒泡触发这一个监听器。</p><div class="grid"><div><pre>收到 app 内的点击事件：
+    若 event.target 不是 Element：结束
+    trigger ← 从目标向上寻找 [data-action]
+    若没有匹配元素：结束
+
+    若 trigger.dataset.action 为 add-note：
+        alert「记录功能建设中...」
+    其他 action：不处理</pre></div><div><div class="vertical"><div class="node">用户点击按钮或按钮内部元素</div><div class="arrow">↓</div><div class="node">事件冒泡至 #app</div><div class="arrow">↓</div><div class="decision">找到 add-note 动作？</div><div class="branches"><div class="branch"><div class="label">是 ↓</div><div class="node">显示提示弹窗<br>保留当前页面</div></div><div class="branch"><div class="label">否 ↓</div><div class="node return">不执行自定义操作</div></div></div></div></div></div><p class="small">导航链接没有 data-action，委托处理器不拦截默认点击行为；浏览器更新 Hash 后交由路由处理。当前没有表单、创建请求或数据保存。</p></section>
+<section id="config"><h2><span>06</span>常量与配置：哪些已使用，哪些待接入</h2><div class="table-wrap"><table><thead><tr><th>常量</th><th>当前值 / 含义</th><th>本阶段使用情况</th></tr></thead><tbody>
+<tr><td>TAG / TAG_LABELS</td><td>TODOLIST → 待办；IMAGINATION → 想法</td><td>TAG 用于路由固定分类；中文标签尚未展示。</td></tr>
+<tr><td>STATUS / STATUS_LABELS</td><td>CREATE → 待开始；RUNNING → 进行中；DONE → 已完成；CANCEL → 已取消；FAILED → 已失败</td><td>已定义，尚无状态控件。</td></tr>
+<tr><td>TAG_ALL / STATUS_ALL</td><td>均为空字符串</td><td>预留全部分类 / 状态选项，尚未用于筛选。</td></tr>
+<tr><td>ORDER / ORDER_LABELS</td><td>NEWSET: newset → 最新优先；OLDSET: oldset → 最早优先</td><td>沿用源码中的拼写；尚未对列表排序。</td></tr>
+<tr><td>DEFAULT_ROUTE / ROUTES</td><td>默认 /；四个页面配置</td><td>路由解析和渲染已使用。</td></tr>
+<tr><td>NAV_ITEMS</td><td>TODOLIST、IMAGINATION、TOTAL 三个入口</td><td>用于生成首页导航。</td></tr>
+<tr><td>API_BASE</td><td><code>http://127.0.0.1:8001/api</code></td><td>当前实际配置；尚未发起网络请求。</td></tr>
+<tr><td>REQUEST_TIMEOUT</td><td>10000 毫秒</td><td>仅配置值，尚无超时处理实现。</td></tr>
+<tr><td>DEFAULT_ORDER</td><td><code>ORDER.NEWSET</code>，即 newset</td><td>仅配置值，尚无实际排序。</td></tr>
+</tbody></table></div><div class="note">config.js 的注释描述同源 /api 代理，而当前 API_BASE 是固定的本地绝对地址。该常量不会自动建立代理；本阶段没有导入此模块，也没有调用后端，因此两者暂未参与页面运行。</div><p class="small">枚举、标签、路由和导航容器使用 Object.freeze。它是浅冻结，不会递归冻结 ROUTES 中的子配置或 NAV_ITEMS 中的对象。</p></section>
+<section id="example"><h2><span>07</span>串联示例与当前边界</h2><h3>一次完整操作：从首页进入想法页</h3><div class="vertical"><div class="node">打开首页 → startRouter 立即解析 → renderHome</div><div class="arrow">↓</div><div class="node">点击 IMAGINATION → Hash 变为 #/imagination</div><div class="arrow">↓</div><div class="node">hashchange → 解析 items 配置 → 更新文档标题</div><div class="arrow">↓</div><div class="node">清空旧页面 → 渲染列表页<br>data-fixed-tag = IMAGINATION</div><div class="arrow">↓</div><div class="node">点击「记录此刻」→ 弹出建设中提示<br>关闭弹窗后仍停留在想法页</div></div><h3>阅读代码时的注意点</h3><ul><li>空 Hash 使用首页，但不会强制将地址改为 #/；#todolist 可解析为 /todolist。</li><li>路径精确匹配，未处理尾斜杠、大小写转换或 Hash 内的查询参数；未命中的地址会回首页。</li><li>浏览器前进 / 后退引起 Hash 变化时，会再次渲染并滚动到顶部。</li><li>页面以 ES Module 组织，应通过 HTTP 静态服务访问；直接双击 file:// 文件可能受到浏览器模块加载限制。</li><li>没有加载动画、网络请求、真实列表、编辑删除或持久化实现。本页描述的是当前占位阶段。</li></ul><p class="small">所有流程图与伪代码都在本页内，不依赖第三方脚本。本文仅说明源码，未改变前端行为。</p></section>
+<footer>LuanNote · Frontend Phase 1 · 文档范围：frontend/index.html 与 frontend/js 下现有四个 JavaScript 文件</footer></main></div>
+</body></html>

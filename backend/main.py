@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from backend.routers import items
 from backend.Store.ItemStore import load
@@ -17,6 +18,13 @@ app = FastAPI(
         "email":"hengmuon@google.com"
     },
     lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5501", "http://localhost:5501"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["Content-Type"],
+)
 
 app.include_router(items.router)
 
