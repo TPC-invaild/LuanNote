@@ -1,13 +1,14 @@
 // ========js/app.js=======
 // 应用入口：绑定路由，按路由配置分发到对应页面。
 
-// 本阶段页面内容为占位，用于验证路由与目录结构。
+// 列表页已接入数据；编辑器和详情仍为占位。
 
 import { startRouter } from "./router.js";
 import { NAV_ITEMS } from "./constant.js";
 import { mountItemsPage } from "./pages/itemsPage.js";
 
 const app = document.getElementById("app")
+let cleanupCurrentPage = null;
 
 if(!app){
     throw new Error("找不到挂载点#app, 请检查index.html")

@@ -3,7 +3,7 @@
 // 只负责渲染与收集， 数据来自于itemStore,写入通过回调交给上层。
 
 
-import { subscriber,load, setFilters,setOrder,refresh,getState } from "../state/itemStore.js";
+import { subscribe,load, setFilters,setOrder,refresh,cancelLoad } from "../state/itemStore.js";
 
 import {TAG,TAG_LABELS,STATUS,STATUS_LABELS,ORDER,ORDER_LABELS} from "../constant.js"
 
@@ -25,7 +25,7 @@ function option(value ,label){
 }
 
 function field (labelText, control){
-    const wrap = el("label","filter-filed");
+    const wrap = el("label","filter-field");
     wrap.append(el("span","filter-label",labelText),control);
     return wrap;
 }
@@ -49,14 +49,14 @@ function formatTime(value){
  * @param {string|null} options.fixedTag
  * @param {(info:{tag:string}) => void } options.onAdd
  * @param {(ID: number) => void } options.onOpenItem
- * @param {() => void } 清理函数
+ * @returns {() => void} 清理函数
  */
 
 export function mountItemsPage(container, options={}){
     const {title = "列表", fixedTag = null, onAdd, onOpenItem} = options;
     const pageTag = fixedTag ?? "";
 
-    container.replaceChild();
+    container.replaceChildren();
 
     //骨架
     const root = el("section", "items-page");
@@ -82,7 +82,7 @@ export function mountItemsPage(container, options={}){
         tagSelect.dataset.filter = "tag";
         tagSelect.append(option("", "全部分类"));
         
-        for(const value of Object.values[TAG]){
+        for(const value of Object.values(TAG)){
             tagSelect.append(option(value,TAG_LABELS[value] ??  value));
         }
         toolbar.append(field("分类", tagSelect));
@@ -91,7 +91,7 @@ export function mountItemsPage(container, options={}){
     const statusSelect = el("select","filter-select");
     statusSelect.dataset.filter = "status";
     statusSelect.append(option("", "全部状态"));
-    for( const value of Object.values[STATUS]){
+    for( const value of Object.values(STATUS)){
         statusSelect.append(option(value,STATUS_LABELS[value] ?? value));
     }
 
@@ -99,9 +99,11 @@ export function mountItemsPage(container, options={}){
 
     const orderSelect = el("select","filter-select");
     orderSelect.dataset.filter = "order";
-    for( const value of Object.values[ORDER]){
-        statusSelect.append(option(value,ORDER_LABELS[value] ?? value));
+    for( const value of Object.values(ORDER)){
+        orderSelect.append(option(value,ORDER_LABELS[value] ?? value));
     }
+
+    toolbar.append(field("排序", orderSelect));
 
     const listEl = el("div","items-list");
     root.append(headers,toolbar,listEl);
@@ -113,16 +115,16 @@ export function mountItemsPage(container, options={}){
     load( { tag:pageTag, status:"" } );
 
     //订阅
-    const unsubscribe = subscriber(render);
+    const unsubscribe = subscribe(render);
 
     function render (state) {
-        statusSelect.value = state.filter.status;
-        if(tagSelect) tagSelect.value = state.filter.tag;
-        orderSelect.value = state.filter.order;
+        statusSelect.value = state.filters.status;
+        if(tagSelect) tagSelect.value = state.filters.tag;
+        orderSelect.value = state.order;
 
-        listEl.replaceChild();
+        listEl.replaceChildren();
 
-        if(!state.hashLoad && state.loading){
+        if(state.loading){
             listEl.append(renderLoading());
             return;
         }
@@ -158,8 +160,8 @@ export function mountItemsPage(container, options={}){
 
     function renderEmpty(state){
         const userFilter = 
-            state.filter.status !==  "" ||
-            (fixedTag === null && state.filter.tag !== "");
+            state.filters.status !==  "" ||
+            (fixedTag === null && state.filters.tag !== "");
         
         return el(
             "p",
@@ -170,10 +172,10 @@ export function mountItemsPage(container, options={}){
 
     function renderCard(item){
         const card = el("article","item-card");
-        card.dataset.id(item.ID);
+        card.dataset.id = String(item.ID);
         card.tabIndex = 0 ;
         card.setAttribute("role","button");
-        card.setAttribute("arial-label", `打开笔记:${item.contact ?? ""}`);
+        card.setAttribute("aria-label", `打开笔记:${item.contact ?? ""}`);
 
         const meta = el('div',"item-meta");
 
@@ -183,7 +185,7 @@ export function mountItemsPage(container, options={}){
 
         const badge = el(
             "span",
-            `stauts-badge status-${String(item.status).toLocaleLowerCase()}`,
+            `status-badge status-${String(item.status).toLocaleLowerCase()}`,
             STATUS_LABELS[item.status] ?? item.status
         );
 
@@ -204,12 +206,13 @@ export function mountItemsPage(container, options={}){
 
     function currentAddTag(){
         if(fixedTag) return fixedTag;
-        return getState.filter.tag ?? "";
+        return tagSelect?.value ?? "";
     }
 
     function onClink(event){
+        if (!(event.target instanceof Element)) return;
         const actionEl = event.target.closest("[data-action]");
-        if( actionEl && root.contain(actionEl) ) {
+        if( actionEl && root.contains(actionEl) ) {
             const action = actionEl.dataset.action;
             if(action === "add") {
                 onAdd?.({tag: currentAddTag()});
@@ -222,17 +225,18 @@ export function mountItemsPage(container, options={}){
         }
 
         const card = event.target.closest(".item-card[data-id]");
-        if(card && root.contain(card)){
+        if(card && root.contains(card)){
             onOpenItem?.(Number(card.dataset.id));
         }
     }
 
     function onKeydown(event){
+        if (!(event.target instanceof Element)) return;
         if(event.key !== "Enter" && event.key !== " ") return;
         const card = event.target.closest(".item-card[data-id]");
 
         if(card && event.target === card) {
-            event.preventDefualt();
+            event.preventDefault();
             onOpenItem?.(Number(card.dataset.id));
         }
     }
@@ -250,17 +254,18 @@ export function mountItemsPage(container, options={}){
         else if(filter === "order") setOrder(select.value);
     }
 
-    root.addEventListen("click",onClink);
-    root.addEventListen("keydown",onKeydown);
-    root.addEventListen("change",onChange);
+    root.addEventListener("click",onClink);
+    root.addEventListener("keydown",onKeydown);
+    root.addEventListener("change",onChange);
 
     /*-----清理------*/
 
     return () => {
         unsubscribe();
-        root.removeEventListen("click",onClink);
-        root.removeEventListen("keydown",onKeydown);
-        root.removeEventListen("change",onChange);
-        container.replaceChild();
+        cancelLoad();
+        root.removeEventListener("click",onClink);
+        root.removeEventListener("keydown",onKeydown);
+        root.removeEventListener("change",onChange);
+        container.replaceChildren();
     }
 }

@@ -120,7 +120,7 @@ async function readErrorDetail(response) {
  * @param {object} [options]
  * @param {object} [options.body]    有值时自动 JSON 序列化并带 Content-Type
  * @param {AbortSignal} [options.signal] 调用方主动取消
- * @param {number} [options.timeout] 毫秒，默认 15000
+ * @param {number} [options.timeout] 毫秒，默认使用 REQUEST_TIMEOUT
  * @returns {Promise<any>} 204 或空正文返回 null，否则返回解析后的 JSON
  */
 export async function request(method, path, { body, signal, timeout = REQUEST_TIMEOUT } = {}) {
@@ -140,38 +140,40 @@ export async function request(method, path, { body, signal, timeout = REQUEST_TI
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: combined,
     });
+
+    // 删除成功：无正文，直接返回，不解析 JSON
+    if (response.status === 204) return null;
+
+    if (!response.ok) {
+      const { message, fieldErrors } = await readErrorDetail(response);
+      throw new ApiError(
+        message || STATUS_FALLBACK[response.status] || `请求失败（${response.status}）`,
+        { status: response.status, fieldErrors }
+      );
+    }
+
+    const text = await response.text();
+    if (!text) return null;
+
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      throw new ApiError("服务器返回了无法解析的数据", {
+        status: response.status,
+        cause: error,
+      });
+    }
   } catch (error) {
     // 外部取消优先：切页导致的取消不应该显示错误
     if (signal?.aborted) throw new CanceledError();
     if (timeoutController.signal.aborted) {
       throw new ApiError("请求超时，请检查网络后重试", { status: 0, cause: error });
     }
+    if (error instanceof ApiError) throw error;
     throw new ApiError("网络错误，请检查连接后重试", { status: 0, cause: error });
   } finally {
     clearTimeout(timeoutId);
     cleanup();
   }
 
-  // 删除成功：无正文，直接返回，不解析 JSON
-  if (response.status === 204) return null;
-
-  if (!response.ok) {
-    const { message, fieldErrors } = await readErrorDetail(response);
-    throw new ApiError(
-      message || STATUS_FALLBACK[response.status] || `请求失败（${response.status}）`,
-      { status: response.status, fieldErrors }
-    );
-  }
-
-  const text = await response.text();
-  if (!text) return null;
-
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    throw new ApiError("服务器返回了无法解析的数据", {
-      status: response.status,
-      cause: error,
-    });
-  }
 }

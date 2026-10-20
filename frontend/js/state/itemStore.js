@@ -5,6 +5,7 @@
 import * as itemApi from "../api/items.js"
 import { isCanceled  } from "../api/http.js"
 import { ORDER } from "../constant.js"
+import { DEFAULT_ORDER } from "../config.js"
 
 
 /*------------内部状态-------- */
@@ -13,7 +14,7 @@ let state ={
     loading : false,
     error: null,
     filters: {tag: "",status: ""},
-    order: ORDER.NEWSET,
+    order: DEFAULT_ORDER,
     hasLoaded:  false,
 }
 
@@ -72,8 +73,8 @@ export async function load(overrides = {}){
     const seq = ++requestSeq;
 
     const nextFilters = {
-        tag:overrides.tag !== undefined ? overrides.tag : state.filters.tag;
-        status : overrides.status !== undefined ? overrides.status : state.filters.status ;
+        tag:overrides.tag !== undefined ? overrides.tag : state.filters.tag,
+        status : overrides.status !== undefined ? overrides.status : state.filters.status,
     }
 
     setState( {loading:true,error:null,filters:nextFilters} );
@@ -149,3 +150,11 @@ export async function remove(ID) {
     return result;
 }
 
+
+// 离开列表页时使旧响应失效，并取消仍在进行的请求。
+export function cancelLoad() {
+    ++requestSeq;
+    currentController?.abort();
+    currentController = null;
+    setState({ loading: false });
+}
