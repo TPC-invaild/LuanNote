@@ -5,6 +5,7 @@
 
 import { startRouter } from "./router.js";
 import { NAV_ITEMS } from "./constant.js";
+import { mountItemsPage } from "./pages/itemsPage.js";
 
 const app = document.getElementById("app")
 
@@ -45,43 +46,30 @@ function renderHome() {
 
 // -------------------列表页-----------------
 function renderItemsPage(route) {
-    const {config} = route;
-    app.replaceChildren();
-    
-    const wrap = document.createElement("section");
-    wrap.className = "item-page";
-    wrap.dataset.fixedTag = config.fixedTag ?? "";
+  const { config } = route;
 
-    const head = document.createElement("header");
-    head.className = "item-head";
-
-    const back = document.createElement("a");
-    back.href="#/";
-    back.textContent="<- 首页";
-
-    const title = document.createElement("h1");
-    title.textContent = config.title;
-
-    const addButton = document.createElement("button");
-    addButton.type = "button";
-    addButton.className = "btn-add";
-    addButton.textContent = "记录此刻";
-    addButton.dataset.action = "add-note";
-
-    head.append(back,title,addButton);
-
-    const placeholder = document.createElement("p");
-    placeholder.className = "placeholder";
-    placeholder.textContent = "什么都没有哦.";
-    
-    wrap.append(head,placeholder);
-    app.append(wrap);
+  cleanupCurrentPage = mountItemsPage(app, {
+    title: config.title,
+    fixedTag: config.fixedTag,
+    onAdd: ({ tag }) => {
+      // 下一阶段：打开 itemEditor，传入预选分类
+      console.log("[TODO] 打开编辑器，预选分类:", tag);
+    },
+    onOpenItem: (ID) => {
+      // 下一阶段：打开 itemDetail
+      console.log("[TODO] 打开详情:", ID);
+    },
+  });
 }
-
 //------------------路由分发----------------
 function render(route) {
-    const {config} = route;
+    const { config } = route;
 
+    // 先清理上一页：取消订阅、解绑事件、取消列表请求
+    if (cleanupCurrentPage) {
+        cleanupCurrentPage();
+        cleanupCurrentPage = null;
+    }
     document.title = `LuanNote · ${config.title}` ; 
     window.scrollTo(0,0);
 
