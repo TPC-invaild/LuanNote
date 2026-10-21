@@ -1,7 +1,7 @@
 // ========js/app.js=======
 // 应用入口：绑定路由，按路由配置分发到对应页面。
 
-// 列表页已接入数据；编辑器和详情仍为占位。
+// 列表页已接入数据，支持新建与编辑笔记。
 
 import { startRouter } from "./router.js";
 import { NAV_ITEMS } from "./constant.js";
@@ -28,7 +28,7 @@ function openCreateEditor(initialTag = ""){
     });
 }
 
-function openEidtEditor(ID){
+function openEditEditor(ID){
     const item = getState().items.find((i) => i.ID === ID);
     if(!item){
         toast("我想你可能失忆了",{type: "error"});
@@ -61,7 +61,7 @@ function renderHome() {
     addButton.dataset.action = "add-note";
     
     const nav = document.createElement("nav");
-    nav.className = "mini-nav";
+    nav.className = "main-nav";
     for (const { path, label } of NAV_ITEMS ) {
         const link = document.createElement("a");
         link.href = `#${path}`;
@@ -83,7 +83,7 @@ function renderItemsPage(route) {
     title: config.title,
     fixedTag: config.fixedTag,
     onAdd: ({ tag }) => openCreateEditor(tag),
-    onOpenItem: (ID) => openEidtEditor(ID),
+    onOpenItem: (ID) => openEditEditor(ID),
   });
 }
 //------------------路由分发----------------
@@ -114,6 +114,7 @@ function render(route) {
 /* ---------------- 全局事件 ---------------- */
 
 app.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element)) return;
   const trigger = event.target.closest("[data-action]");
   if (!trigger) return;
   // 列表页的「添加」由 itemsPage 自己处理，这里只接主页入口

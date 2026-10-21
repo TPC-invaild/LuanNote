@@ -37,13 +37,13 @@ export const STATUS_ALL = "";
 
 //排序方式
 export const ORDER=Object.freeze({
-    NEWSET:"newset",
-    OLDSET:"oldset"
+    NEWEST:"newest",
+    OLDEST:"oldest"
 });
 
 export const ORDER_LABELS=Object.freeze({
-    [ORDER.NEWSET]: "最新优先",
-    [ORDER.OLDSET]: "最早优先"
+    [ORDER.NEWEST]: "最新优先",
+    [ORDER.OLDEST]: "最早优先"
 });
 
 //默认主页

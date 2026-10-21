@@ -28,7 +28,7 @@ const subscribers = new Set();
 /**
  *  订阅状态变化。订阅时立即推送一次当前状态.
  *  @param {(state:object) => void } listener
- *  @retruns { () => void }取消订阅
+ *  @returns { () => void }取消订阅
  */
 
 export function subscribe( listener ){
@@ -51,7 +51,7 @@ function sortItems(items,order){
         const tb = typeof b?.time === "string" ? b.time : "";
         if( ta === tb) return 0;
         const ascending = ta < tb ? -1 : 1;
-        return order === ORDER.OLDSET ? ascending : -ascending;
+        return order === ORDER.OLDEST ? ascending : -ascending;
     });
     return copy;
 }
@@ -128,8 +128,8 @@ export function setOrder(order){
 /**--------------------写入-------------------- */
 
 //写入操作会抛出错误（如422 /404 ），由编辑器或详情捕获
-// 写入成功后的刷新失败之写入 state.error， 不影响写入结果的
-// 这样界面可以 先提示保存成功， 在单独提示刷新失败
+// 写入成功后的刷新失败只写入 state.error，不影响写入结果
+// 这样界面可以 先提示保存成功， 再单独提示刷新失败
 
 export async function create(payload) {
     const created = await itemApi.create(payload);
@@ -157,4 +157,8 @@ export function cancelLoad() {
     currentController?.abort();
     currentController = null;
     setState({ loading: false });
+}
+
+export function getState() {
+    return state;
 }

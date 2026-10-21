@@ -110,8 +110,8 @@ export function mountItemsPage(container, options={}){
     container.append(root);
 
     /*-----首次加载------- */
-    //load的同步部分会立刻吧filters设为页面分类并 进入loading
-    // 随后subscribe推送的第一帧就是正确状体，不会闪出上一页的内容
+    //load的同步部分会立即将 filters 设为页面分类并进入 loading
+    // 随后subscribe推送的第一帧就是正确状态，不会闪出上一页的内容
     load( { tag:pageTag, status:"" } );
 
     //订阅
@@ -209,7 +209,7 @@ export function mountItemsPage(container, options={}){
         return tagSelect?.value ?? "";
     }
 
-    function onClink(event){
+    function onClick(event){
         if (!(event.target instanceof Element)) return;
         const actionEl = event.target.closest("[data-action]");
         if( actionEl && root.contains(actionEl) ) {
@@ -254,7 +254,7 @@ export function mountItemsPage(container, options={}){
         else if(filter === "order") setOrder(select.value);
     }
 
-    root.addEventListener("click",onClink);
+    root.addEventListener("click",onClick);
     root.addEventListener("keydown",onKeydown);
     root.addEventListener("change",onChange);
 
@@ -263,7 +263,7 @@ export function mountItemsPage(container, options={}){
     return () => {
         unsubscribe();
         cancelLoad();
-        root.removeEventListener("click",onClink);
+        root.removeEventListener("click",onClick);
         root.removeEventListener("keydown",onKeydown);
         root.removeEventListener("change",onChange);
         container.replaceChildren();

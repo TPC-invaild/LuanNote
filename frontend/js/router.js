@@ -49,7 +49,7 @@ export function startRouter(onRoute){
     const handle = () => {
         let route = resolverRoute();
 
-        //unknow location
+        // 未知路径回到首页
 
         if(route.unknown) {
             window.history.replaceState(null, "", `#${DEFAULT_ROUTE}`)

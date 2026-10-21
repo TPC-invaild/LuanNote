@@ -1,18 +1,17 @@
 /*-------------js/components/itemEditor.js ------------------*/
 
 //新建，编辑共用同一个弹窗，负责校验，提交，错误展示与焦点管理
-//数据写入走itemStore; 成功后的提示由调用方通过onSave 决定
+//数据写入走itemStore; 成功后的提示由调用方通过onSaved 决定
 
 
-import { TAG, STATUS,TAG_LABELS,STATUS_LABELS } from "../constant";
-import { create, update } from "../api/items";
-import { act } from "react";
+import { TAG, STATUS,TAG_LABELS,STATUS_LABELS } from "../constant.js";
+import { create, update } from "../state/itemStore.js";
 
 let active = null;
 
 function el(tag,className,text){
     const node = document.createElement(tag);
-    if(!className) node.className = className;
+    if(className) node.className = className;
     if(text !== undefined ) node.textContent = text;
 
     return node;
@@ -52,24 +51,28 @@ export function openItemEditor({
     const form = el("form","editor-form");
     form.noValidate = true;
 
+    const title = el("h2", "editor-title", isEdit ? "编辑笔记" : "添加笔记");
+    dialog.setAttribute("aria-label", title.textContent);
+
     //内容
-    const contactFiled = el("div","editor-filed");
+    const contactField = el("div","editor-field");
     const contactLabel = el("label","editor-label","内容");
     contactLabel.htmlFor = "editor-contact";
 
-    const contactInput = document.createElement("textArea");
+    const contactInput = document.createElement("textarea");
+    contactInput.className = "editor-textarea";
     contactInput.id = "editor-contact";
     contactInput.name = "contact";
     contactInput.rows = 6;
     contactInput.placeholder = "别想了，瞎写就行";
     contactInput.value = initial.contact;
 
-    const contactError = el("p","filed-error");
-    contactFiled.append(contactLabel,contactInput,contactError);
+    const contactError = el("p","field-error");
+    contactField.append(contactLabel,contactInput,contactError);
 
     //分类
-    const tagField  = el("div","tag-filed");
-    const tagLabel  = el("label","tag-label","分类");
+    const tagField  = el("div","editor-field");
+    const tagLabel  = el("label","editor-label","分类");
     tagLabel.htmlFor = "editor-tag";
 
     const tagSelect = document.createElement("select");
@@ -78,7 +81,7 @@ export function openItemEditor({
     tagSelect.className = "editor-select";
 
     const tagPlaceholder = document.createElement("option");
-    tagPlaceholder.value = "",
+    tagPlaceholder.value = "";
     tagPlaceholder.textContent = "请选择分类";
     
     tagSelect.append(tagPlaceholder);
@@ -100,9 +103,9 @@ export function openItemEditor({
     let statusError = null;
 
     if(isEdit){
-        statusField  = el("div","editor-filed");
+        statusField  = el("div","editor-field");
         const statusLabel = el("label","editor-label","状态");
-        statusLabel.htmlFor("editor-status");
+        statusLabel.htmlFor = "editor-status";
         statusSelect = document.createElement("select");
         statusSelect.id = "editor-status";
         statusSelect.name = "status";
@@ -116,20 +119,20 @@ export function openItemEditor({
         }
 
         statusSelect.value = initial.status;
-        statusError = el("p","filed-error");
+        statusError = el("p","field-error");
         statusField.append(statusLabel,statusSelect,statusError);
     }
 
     const formError = el("p","form-error");
 
     const actions = el("div","editor-actions");
-    const cancelButton = el("button","button-secondary","取消");
+    const cancelButton = el("button","btn-secondary","取消");
     cancelButton.type = "button";
 
-    const saveButton = el("button","button-primary",isEdit? "保存":"添加");
+    const saveButton = el("button","btn-primary",isEdit? "保存":"添加");
     saveButton.type = "submit";
     actions.append(cancelButton,saveButton);
-    form.append(title,contactFiled,tagField);
+    form.append(title,contactField,tagField);
     if(statusField)form.append(statusField);
     form.append(formError,actions);
     dialog.append(form);
@@ -142,10 +145,10 @@ export function openItemEditor({
     /*------校验------*/
 
     function clearErrors(){
-        contactError.text = "";
-        tagError.text = "";
-        if(statusError) statusError.text = "";
-        formError.text = "";
+        contactError.textContent = "";
+        tagError.textContent = "";
+        if(statusError) statusError.textContent = "";
+        formError.textContent = "";
     }
 
     function validate(){
@@ -160,6 +163,10 @@ export function openItemEditor({
         if(!Object.values(TAG).includes(tagSelect.value)){
             tagError.textContent = "说说吧，这是一个想法还是你的待办";
             ok =false;
+        }
+        if (statusSelect && !Object.values(STATUS).includes(statusSelect.value)) {
+            statusError.textContent = "请选择有效的状态";
+            ok = false;
         }
         return ok;
     }
@@ -180,9 +187,9 @@ export function openItemEditor({
     function buildPatch(){
         const changes = {};
         const contact = contactInput.value.trim();
-        if(contact !== (initial.contact ?? "").trim) changes.contact = contact;
+        if(contact !== (initial.contact ?? "").trim()) changes.contact = contact;
         if(tagSelect.value !== initial.tag) changes.tag = tagSelect.value;
-        if(statusSelect && statusSelect.value !== initial.status) changes.status = statusField.value;
+        if(statusSelect && statusSelect.value !== initial.status) changes.status = statusSelect.value;
 
         return changes;
     }
@@ -199,10 +206,11 @@ export function openItemEditor({
     //提交
     function setSubmitting(value){
         submitting = value;
-        saveButton.disable = value;
-        cancelButton.disable = value;
+        saveButton.disabled = value;
+        cancelButton.disabled = value;
         contactInput.readOnly = value;
-        if(statusSelect) statusSelect.disable = value;
+        tagSelect.disabled = value;
+        if(statusSelect) statusSelect.disabled = value;
         saveButton.textContent = value ? "保存中..." : (isEdit? "保存" : "添加");
     }
 
@@ -210,7 +218,7 @@ export function openItemEditor({
         applyFieldErrors(error?.fieldErrors);
         if(error?.fieldErrors?.contact) contactInput.focus();
         else if(error?.fieldErrors?.tag) tagSelect.focus();
-        else if(error?.fieldErrors?.status) statusSelect.focus();
+        else if(error?.fieldErrors?.status) statusSelect?.focus();
         formError.textContent = error?.message || "出现了一些未知的问题";
     }
 
@@ -221,6 +229,7 @@ export function openItemEditor({
         if(!validate()){
             if(contactError.textContent) contactInput.focus();
             else if(tagError.textContent) tagSelect.focus();
+            else if(statusError?.textContent) statusSelect.focus();
             return;
         }
 
@@ -232,19 +241,19 @@ export function openItemEditor({
                 return;
             }
 
-            submitting(true);
+            setSubmitting(true);
             try{
                 const updated = await update(item.ID,changes);
                 close();
                 onSaved?.(updated,{mode:"edit"});
-            } catch{
+            } catch(error){
                 setSubmitting(false);
                 showError(error);
             }
             return;
         }
 
-        submitting(true);
+        setSubmitting(true);
         try{
             const created =  await create({
                 contact:contactInput.value.trim(),
@@ -253,7 +262,7 @@ export function openItemEditor({
             });
             close();
             onSaved?.(created,{mode:"create"});
-        }catch{
+        }catch(error){
             setSubmitting(false);
             showError(error);
         }
@@ -263,7 +272,7 @@ export function openItemEditor({
     function requestClose(){
         if(submitting) return;
         if(hasChange()){
-            const ok = document.confirm("这就不记了？");
+            const ok = window.confirm("这就不记了？");
             if(!ok) return;
         }
         close();
@@ -293,18 +302,18 @@ export function openItemEditor({
     })
 
 
-    //输入后清楚对应字段错误
+    //输入后清除对应字段错误
     contactInput.addEventListener("input",() =>{
         contactError.textContent = "";
         formError.textContent = "";
     })
 
-    tagSelect.addEventListener("select",() => {
+    tagSelect.addEventListener("change",() => {
         tagError.textContent = "";
     })
 
     if(statusSelect){
-        statusSelect.addEventListener("select", () => {
+        statusSelect.addEventListener("change", () => {
             statusError.textContent = "";
         })
     }

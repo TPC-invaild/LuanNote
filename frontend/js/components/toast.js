@@ -9,7 +9,7 @@ function ensureContainer(){
     container = document.createElement("div");
     container.className = "toast-container";
     container.setAttribute("role","status");
-    container.setAttribute("arial-live","polite");
+    container.setAttribute("aria-live","polite");
     document.body.append(container);
     return container;
 }
@@ -29,11 +29,12 @@ export function toast(message, { type = "info", duration = 3000} = {}){
     node.textContent = message;
     root.append(node);
 
-    requestAnimationFrame( () => node.classList.add("toast-visible"));
+    requestAnimationFrame( () => { if (!removed) node.classList.add("toast-visible"); });
 
     let removed = false;
     const remove = () => {
         if(removed) return;
+        removed = true;
         node.classList.remove("toast-visible");
         node.addEventListener("transitionend", () => node.remove(), {once: true});
         setTimeout(() => node.remove(), 300);

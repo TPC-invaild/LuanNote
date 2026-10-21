@@ -16,4 +16,4 @@ export const API_BASE = "http://127.0.0.1:8001"
 export const REQUEST_TIMEOUT=10000
 
 //列表默认排序 
-export const DEFAULT_ORDER= ORDER.NEWSET
+export const DEFAULT_ORDER= ORDER.NEWEST
