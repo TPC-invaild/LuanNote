@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LuanNote · 前端第二阶段逻辑说明</title><style>
+:root{--ink:#203047;--muted:#66758a;--line:#dce4eb;--accent:#176f70;--pale:#edf7f5}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:#f5f7fa;color:var(--ink);font:16px/1.8 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.layout{max-width:1380px;margin:auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px;padding:48px 40px}aside{position:sticky;top:32px;align-self:start}aside b{display:block;font-size:19px;margin-bottom:20px}nav a{display:block;padding:8px 12px;border-left:2px solid var(--line);font-size:14px}nav a:hover{background:var(--pale);border-color:var(--accent)}main{min-width:0;max-width:1000px}.eyebrow{font-size:12px;letter-spacing:3px;color:var(--accent);font-weight:700}h1{font-size:42px;line-height:1.25;margin:12px 0 20px;letter-spacing:-1px}h2{font-size:25px;margin:0 0 18px}h3{font-size:18px;margin:0 0 12px}p{margin:10px 0}.lead{font-size:18px;color:var(--muted);max-width:760px}.meta{font-size:13px;color:var(--muted);margin:22px 0 35px}section{background:white;border:1px solid var(--line);border-radius:16px;padding:30px;margin:0 0 24px}section h2 span{color:var(--accent);font-size:14px;margin-right:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.card{border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}.small{font-size:14px;color:var(--muted)}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{font-size:.88em;background:#eef2f6;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{background:#172638;color:#e4edf4;padding:20px;border-radius:10px;font-size:13px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}.note{border-left:3px solid var(--accent);background:var(--pale);padding:13px 17px;margin-top:18px;font-size:14px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}th{background:#f3f6f8;color:var(--muted);font-weight:600}th,td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}.flow{display:flex;align-items:stretch;gap:9px;margin:22px 0}.node{flex:1;border:1px solid #b9d8d4;border-radius:10px;background:var(--pale);padding:15px 10px;text-align:center;font-size:14px}.node strong{display:block}.node small{display:block;color:var(--muted);font-size:12px}.arrow{align-self:center;color:var(--accent);font-size:22px}.vertical{display:flex;flex-direction:column;align-items:center;gap:6px;margin:20px 0}.vertical .node{width:100%;max-width:560px}.branches{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:16px}.branch{text-align:center}.branch .node{height:calc(100% - 28px)}.label{font-size:12px;color:var(--muted)}.decision{border:1px dashed #a7884a;background:#fff8e8;border-radius:30px;padding:12px 28px;text-align:center;font-size:14px}.return{background:#eff3fb;border-color:#c5d3eb}.caption{color:var(--muted);font-size:12px;text-align:center}footer{font-size:13px;color:var(--muted);padding:10px 0 35px}ul{padding-left:22px}.pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:20px;background:var(--pale);color:var(--accent)}@media(max-width:1000px){.layout{grid-template-columns:170px minmax(0,1fr);gap:24px;padding:28px 20px}.grid{grid-template-columns:1fr}.flow{flex-direction:column}.arrow{transform:rotate(90deg)}}@media(max-width:700px){.layout{display:block;padding:20px 14px}aside{position:static;margin-bottom:28px}nav{display:flex;flex-wrap:wrap;gap:4px}nav a{padding:4px 9px}h1{font-size:32px}section{padding:22px 18px}.branches{grid-template-columns:1fr}td,th{padding:9px}}@media print{body{background:white;font-size:11pt}.layout{display:block;padding:0}aside{display:none}main{max-width:none}section{break-inside:avoid;border-radius:0;padding:20px}pre{background:#f3f5f8;color:#203047}h1{font-size:28pt}a{color:inherit}.grid{grid-template-columns:1fr}}
+</style></head><body>
+<div class="layout"><aside><b>LuanNote <span class="pill">Frontend · P2</span></b><nav aria-label="文档目录">
+<a href="#map">01 · 模块全景</a><a href="#route">02 · 启动与切页</a><a href="#page">03 · 列表与交互</a><a href="#store">04 · 状态与加载</a><a href="#race">05 · 竞争与取消</a><a href="#api">06 · 条目 API</a><a href="#http">07 · 请求与错误</a><a href="#config">08 · 配置与边界</a></nav></aside>
+<main><header><div class="eyebrow">CODE READING / 从页面到数据</div><h1>列表如何加载，状态如何流转</h1><p class="lead">第二阶段将列表页接入状态管理和 HTTP 请求。页面收集操作，Store 管理数据与请求顺序，API 层负责与后端通信，再由订阅机制更新界面。</p><p class="meta">依据当前 frontend 源码 · 2026-10-21 · 伪代码用于解释，非可执行代码 · 本页无需联网</p></header>
+<section id="map"><h2><span>01</span>先看完整的数据链路</h2><div class="flow"><div class="node"><strong>页面</strong><small>itemsPage.js<br>展示与交互</small></div><div class="arrow">→</div><div class="node"><strong>状态层</strong><small>itemStore.js<br>加载与排序</small></div><div class="arrow">→</div><div class="node"><strong>条目 API</strong><small>items.js<br>映射接口参数</small></div><div class="arrow">→</div><div class="node"><strong>HTTP 层</strong><small>http.js<br>fetch / 超时 / 错误</small></div></div><p class="caption">请求向右传递；结果返回 Store 后，通过 setState → 订阅者 render 更新页面。</p>
+<div class="table-wrap"><table><thead><tr><th>文件</th><th>职责</th></tr></thead><tbody>
+<tr><td><code>index.html</code></td><td>提供 #app 挂载点，以 ES Module 加载 js/app.js；设置编码、viewport 和禁用脚本提示。</td></tr>
+<tr><td><code>js/app.js</code></td><td>首页渲染、按路由挂载列表、保存并执行旧页面清理函数；编辑器与详情回调仍为占位。</td></tr>
+<tr><td><code>js/router.js</code></td><td>解析 Hash，回退未知路径，监听 hashchange，提供 navigate。</td></tr>
+<tr><td><code>js/pages/itemsPage.js</code></td><td>构建工具栏与卡片；订阅状态；收集筛选、排序、点击及键盘事件。</td></tr>
+<tr><td><code>js/state/itemStore.js</code></td><td>持有列表状态、通知订阅者、取消旧请求、防止过期结果覆盖、串联写入与刷新。</td></tr>
+<tr><td><code>js/api/items.js</code></td><td>封装 list / get / create / patch / remove，不操作 DOM 或持有页面状态。</td></tr>
+<tr><td><code>js/api/http.js</code></td><td>URL 拼接、JSON 请求、响应解析、取消、超时、统一接口错误。</td></tr>
+<tr><td><code>js/constant.js</code> / <code>js/config.js</code></td><td>路由、枚举、文案与默认参数。config.js 已通过请求层和 Store 参与运行。</td></tr>
+</tbody></table></div><div class="note">目前已接入真实列表读取、筛选和排序。写入封装已经存在，但尚未连接到编辑表单；点击列表中的添加按钮或卡片，目前只在控制台输出占位消息。</div></section>
+<section id="route"><h2><span>02</span>启动与切页：先清理旧页</h2><div class="grid"><div><h3>启动与路由伪代码</h3><pre>index.html 加载 app.js 及依赖
+查找 #app；不存在则抛出错误
+绑定首页按钮的点击委托
+startRouter(render)：
+    监听 hashchange
+    立即处理一次当前 Hash
+
+处理 Hash：
+    去掉 #；空值使用 /
+    缺少开头的 / 时补上
+    查找 ROUTES 中的配置
+    未找到：replaceState 替换为 #/
+            再次解析首页配置
+    调用 render(route)</pre></div><div><h3>render(route)</h3><pre>若存在旧页面清理函数：
+    调用清理函数
+    清理函数引用 ← null
+
+更新浏览器标题，滚动到顶部
+若 config.page 为 home：
+    渲染首页与三个导航入口
+若 config.page 为 items：
+    挂载列表页，传入 title / fixedTag
+    保存返回的清理函数
+其他配置：显示「你迷路啦！」</pre></div></div>
+<div class="table-wrap" style="margin-top:20px"><table><thead><tr><th>Hash</th><th>页面</th><th>首次加载分类</th><th>分类下拉框</th></tr></thead><tbody><tr><td>#/</td><td>首页</td><td>不发起列表加载</td><td>无</td></tr><tr><td>#/todolist</td><td>TODOLIST</td><td>TODOLIST</td><td>隐藏</td></tr><tr><td>#/imagination</td><td>IMAGINATION</td><td>IMAGINATION</td><td>隐藏</td></tr><tr><td>#/total</td><td>TOTAL</td><td>空字符串，表示全部</td><td>显示</td></tr></tbody></table></div><p class="small">链接修改 Hash；navigate(path) 也只修改 Hash，相同目标直接返回。每次挂载列表都将状态筛选重置为全部，排序沿用 Store 中的当前值。</p></section>
+<section id="page"><h2><span>03</span>列表页：骨架固定，内容随状态更新</h2><pre>mountItemsPage(container, options)：
+    清空挂载点，创建列表页根节点
+    添加页头：返回首页 / 标题 / 添加笔记
+    创建筛选栏：
+        非固定分类页面 → 分类下拉框
+        所有列表页面 → 状态与排序下拉框
+    创建列表内容容器
+    load({ tag: fixedTag 或空字符串, status: 空字符串 })
+    subscribe(render) → 立即收到当前状态
+    绑定 click、keydown、change
+    返回页面清理函数</pre><div class="note">load 在第一次等待网络之前，就同步设置 loading 和 filters。因此紧接着的订阅首次渲染显示正确的加载状态，不会先展示上一页的卡片。</div>
+<h3 style="margin-top:24px">渲染优先级</h3><div class="vertical"><div class="node">同步下拉框值 → 清空列表内容</div><div class="arrow">↓</div><div class="decision">按顺序选择第一个满足的条件</div><div class="branches"><div class="branch"><div class="label">① loading = true</div><div class="node">显示「加载中...」</div></div><div class="branch"><div class="label">② 有 error</div><div class="node">显示错误文字与重试按钮</div></div><div class="branch"><div class="label">③ items 为空</div><div class="node">显示空状态<br>按是否有用户筛选区分文案</div></div><div class="branch"><div class="label">④ 其余情况</div><div class="node">构建卡片集合<br>通过 DocumentFragment 挂载</div></div></div></div><p class="small">每次加载都会暂时隐藏旧卡片，即使 hasLoaded 已为 true。hasLoaded 仍被维护，但当前页面不使用它决定渲染分支。</p>
+<div class="grid"><div class="card"><h3>卡片内容</h3><pre>article.item-card：
+    data-id ← 字符串形式的 ID
+    tabIndex ← 0；role ← button
+    aria-label ← 打开笔记 + contact
+
+非固定分类页：显示分类标签
+显示状态标签与时间
+    时间提取为 YYYY-MM-DD HH:mm
+    缺失 → 时间未知；不匹配格式 → 原值
+显示 contact（通过 textContent）</pre></div><div class="card"><h3>交互映射</h3><pre>分类 / 状态变化 → setFilters → 重新请求
+排序变化 → setOrder → 本地重新排序
+点击重试 → refresh → 沿用当前筛选加载
+点击添加 → onAdd({ tag: 当前分类 })
+点击卡片 → onOpenItem(数值 ID)
+卡片自身获得焦点时按 Enter / 空格：
+    阻止默认动作 → onOpenItem(数值 ID)</pre><p class="small">页面根节点统一监听事件，通过 closest 找到动作元素或卡片，并检查元素仍在当前根节点内。</p></div></div></section>
+<section id="store"><h2><span>04</span>状态层：加载、订阅与排序</h2><div class="table-wrap"><table><thead><tr><th>现有状态字段</th><th>初始值</th><th>用途</th></tr></thead><tbody><tr><td>items</td><td>[]</td><td>当前列表数据</td></tr><tr><td>loading</td><td>false</td><td>是否正在加载</td></tr><tr><td>error</td><td>null</td><td>失败时保存 message 与 status</td></tr><tr><td>filters</td><td>{ tag: "", status: "" }</td><td>当前请求筛选条件</td></tr><tr><td>order</td><td>DEFAULT_ORDER</td><td>本地显示顺序</td></tr><tr><td>hasLoaded</td><td>false</td><td>当前有效请求成功或失败后置 true</td></tr></tbody></table></div>
+<div class="grid" style="margin-top:22px"><div class="card"><h3>订阅与通知</h3><pre>subscribe(listener)：
+    将 listener 加入 Set
+    立即调用 listener(state)
+    返回从 Set 删除 listener 的函数
+
+setState(patch)：
+    state ← 浅合并旧 state 与 patch
+    遍历订阅者快照，逐个通知</pre></div><div class="card"><h3>本地排序</h3><pre>sortItems(items, order)：
+    复制数组，不原地改变传入数组
+    取每项的 time 字符串，缺失时用空串
+    比较字符串大小
+    OLDSET → 升序，最早优先
+    其他值 → 降序，最新优先
+
+setOrder(order)：
+    与当前值相同则结束
+    否则更新 order 和排序后的 items
+    不发起网络请求</pre></div></div>
+<h3 style="margin-top:24px">load(overrides) 的完整逻辑</h3><pre>取消上一个请求，创建新的 AbortController
+seq ← ++requestSeq
+nextFilters ← 用显式提供的字段覆盖当前筛选
+    未提供 → 沿用旧值；空字符串 → 全部
+通知：loading = true，error = null，filters = nextFilters
+
+尝试调用 itemApi.list(nextFilters, signal)：
+    若 seq 已过期：结束，不修改状态
+    通知：items = 按当前 order 排序后的结果
+          loading = false，error = null，hasLoaded = true
+失败时：
+    若为主动取消或 seq 已过期：直接结束
+    否则通知：loading = false，hasLoaded = true
+              error = { message, status }</pre><p class="small">refresh() 调用无覆盖参数的 load()；setFilters() 合并筛选后调用 load()。普通加载失败写入状态，不向页面抛出。旧 items 保留在状态中，但被加载或错误视图遮住。</p></section>
+<section id="race"><h2><span>05</span>快速切换时：取消 + 请求序号</h2><p>取消请求用于停止无用的网络工作；请求序号用于防止旧结果覆盖新状态。即使旧请求仍然返回，也必须通过序号检查才能更新列表。</p><div class="flow"><div class="node"><strong>请求 A</strong><small>seq = 1<br>筛选 TODOLIST</small></div><div class="arrow">→</div><div class="node"><strong>请求 B 开始</strong><small>取消 A；seq = 2<br>筛选 IMAGINATION</small></div><div class="arrow">→</div><div class="node"><strong>B 返回</strong><small>2 = 当前序号<br>接收并渲染</small></div><div class="arrow">→</div><div class="node"><strong>A 晚到</strong><small>1 ≠ 当前序号<br>丢弃结果</small></div></div>
+<div class="grid"><div class="card"><h3>离开页面</h3><pre>列表页返回的清理函数：
+    unsubscribe() 取消页面订阅
+    cancelLoad() 取消列表请求
+    移除 click / keydown / change 监听
+    清空挂载点
+
+cancelLoad()：
+    ++requestSeq，使旧响应失效
+    abort 当前控制器
+    控制器引用 ← null
+    通知 loading = false</pre></div><div class="card"><h3>为何先取消订阅？</h3><p>cancelLoad 会更新状态并通知订阅者。先取消旧页面订阅，可以避免清理过程中又渲染即将移除的页面。</p><p>这一步不清空 items、filters、order 或 error。进入新列表时重新发起加载，恢复正确的筛选与显示。</p><p class="small">Store 是共享模块状态；当前应用按一次只挂载一个列表页使用它。</p></div></div></section>
+<section id="api"><h2><span>06</span>条目 API：参数如何进入请求</h2><div class="table-wrap"><table><thead><tr><th>函数</th><th>请求</th><th>参数处理</th></tr></thead><tbody>
+<tr><td>list</td><td>GET /items</td><td>tag、status 非空才写入 URLSearchParams；转交 signal。</td></tr><tr><td>get</td><td>GET /items/{ID}</td><td>使用传入 ID；转交 signal。</td></tr><tr><td>create</td><td>POST /items</td><td>发送 contact、tag；status 不是 undefined/null 时才包含。ID 与 time 不发送。</td></tr><tr><td>patch</td><td>PATCH /items/{ID}</td><td>仅保留 contact、tag、status，跳过 undefined/null 与其他字段。</td></tr><tr><td>remove</td><td>DELETE /items/{ID}</td><td>无请求正文；204 由 HTTP 层解析为 null。</td></tr></tbody></table></div>
+<div class="note">patch 并不比较新旧值，也不会逐项报错拒绝额外字段：它实际是过滤字段。过滤后没有可发送内容时，返回被拒绝的 Promise，错误为 ApiError（status 400），不发网络请求。</div><h3 style="margin-top:22px">Store 的写入封装</h3><pre>create / update / remove：
+    等待对应条目 API 写入
+    写入失败 → 抛给调用方，不刷新
+    写入成功 → 等待 refresh()
+    返回写入结果
+
+刷新失败：load 已将错误写入 state.error
+因此写入本身仍返回成功结果</pre><p class="small">这部分逻辑已实现，但当前 app.js 的 onAdd 和 onOpenItem 只输出控制台消息，尚未触发写入封装或单条详情读取。</p></section>
+<section id="http"><h2><span>07</span>HTTP：请求、响应与错误归一化</h2><pre>request(method, path, options)：
+    启动超时计时器
+    合并外部 signal 与超时 signal
+    拼接 URL：完整 http(s) 地址直接使用
+              相对接口路径拼接 API_BASE
+    若 body 存在：JSON 序列化并设置 Content-Type
+    调用 fetch，使用合并后的 signal
+
+    状态 204 → 返回 null
+    非成功响应 → 读取错误 detail → 抛出 ApiError
+    成功响应 → 读取文本
+        空文本 → 返回 null
+        JSON 有效 → 返回解析结果
+        JSON 无效 → 抛出无法解析数据的 ApiError
+
+    捕获错误，按优先级分类
+    无论结果如何：清除计时器，移除 signal 监听</pre>
+<div class="vertical"><div class="node">捕获请求或正文读取错误</div><div class="arrow">↓</div><div class="decision">从上到下匹配第一个条件</div><div class="branches"><div class="branch"><div class="label">① 外部 signal 已取消</div><div class="node">CanceledError<br>页面切换或新请求替代，不显示失败</div></div><div class="branch"><div class="label">② 超时 signal 已取消</div><div class="node">ApiError，status = 0<br>显示请求超时提示</div></div><div class="branch"><div class="label">③ 已是 ApiError</div><div class="node">保留原错误<br>例如 HTTP 422 / 500 或解析失败</div></div><div class="branch"><div class="label">④ 其他错误</div><div class="node">ApiError，status = 0<br>统一为网络错误提示</div></div></div></div>
+<div class="grid"><div class="card"><h3>后端错误 detail 的转换</h3><pre>detail 是数组：
+    从 loc 移除 body / query / path
+    剩余位置用点连接为字段名；空则为 _
+    按字段汇总 msg → fieldErrors
+    拼接可读文本 → message
+
+detail 是非空字符串：直接作为 message
+否则：使用状态码对应的默认提示</pre></div><div class="card"><h3>错误对象如何向上传递</h3><p><code>ApiError</code> 保留 message、status、fieldErrors、cause，并设置名称。<code>CanceledError</code> 单独表示主动取消。</p><p>列表 Store 仅把 message 和 status 放入 state.error；fieldErrors 留在原始接口错误中，供直接捕获写入错误的调用方使用。</p><p class="small">超时计时器覆盖 fetch 与响应正文读取，最后才释放。默认上限为 10000 毫秒。</p></div></div></section>
+<section id="config"><h2><span>08</span>配置、常量与当前边界</h2><div class="table-wrap"><table><thead><tr><th>配置 / 常量</th><th>值与用途</th></tr></thead><tbody><tr><td>API_BASE</td><td><code>http://127.0.0.1:8001</code>；列表请求最终为该地址下的 /items，可附查询参数。</td></tr><tr><td>REQUEST_TIMEOUT</td><td>10000 毫秒。</td></tr><tr><td>DEFAULT_ORDER / ORDER</td><td>默认 ORDER.NEWSET；NEWSET: newset 为最新优先，OLDSET: oldset 为最早优先。保留现有拼写。</td></tr><tr><td>TAG / TAG_LABELS</td><td>TODOLIST → 待办，IMAGINATION → 想法。</td></tr><tr><td>STATUS / STATUS_LABELS</td><td>CREATE → 待开始；RUNNING → 进行中；DONE → 已完成；CANCEL → 已取消；FAILED → 已失败。</td></tr><tr><td>TAG_ALL / STATUS_ALL</td><td>空字符串；页面与 Store 当前直接使用空字符串表示全部。</td></tr><tr><td>ROUTES / NAV_ITEMS</td><td>四个页面配置与首页三个导航入口。Object.freeze 为浅冻结。</td></tr></tbody></table></div>
+<ul><li><strong>样式尚未接入：</strong>css、js/components、js/utils 目录仍为空，index.html 未加载样式表；本说明页的样式只服务于文档阅读。</li><li><strong>读取已接入，编辑与详情待实现：</strong>首页按钮仍弹出建设中提示；列表添加与卡片点击只调用控制台占位回调。</li><li><strong>运行依赖：</strong>前端通过 HTTP 静态服务访问，后端在配置地址可用；跨源访问需后端允许前端来源。</li><li><strong>筛选与排序分工：</strong>tag/status 发给后端筛选，order 只在前端按 time 字符串排序，没有分页逻辑。</li><li><strong>没有持久化前端状态：</strong>当前列表和筛选只在模块内存中，刷新浏览器后重新初始化。</li><li><strong>共享状态按单页使用：</strong>切页取消的是列表请求，写入封装没有接入页面级取消；本阶段并无写入界面触发它们。</li></ul><div class="note">推荐阅读顺序：app.js → itemsPage.js → itemStore.js → api/items.js → api/http.js。沿着一次列表加载追踪，再回看切页清理与错误分支。</div></section>
+<footer>LuanNote · Frontend Phase 2 · 当前源码行为说明，未修改应用代码。</footer></main></div>
+</body></html>
