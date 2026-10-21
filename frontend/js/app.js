@@ -6,12 +6,42 @@
 import { startRouter } from "./router.js";
 import { NAV_ITEMS } from "./constant.js";
 import { mountItemsPage } from "./pages/itemsPage.js";
+import { openItemEditor } from "./components/itemEditor.js";
+import { toast} from "./components/toast.js";
+import {getState} from "./state/itemStore.js"
 
 const app = document.getElementById("app")
-let cleanupCurrentPage = null;
 
 if(!app){
     throw new Error("找不到挂载点#app, 请检查index.html")
+}
+let cleanupCurrentPage = null;
+
+
+/*---------编辑器入口------------ */
+
+function openCreateEditor(initialTag = ""){
+    openItemEditor({
+        mode:"create",
+        initialTag,
+        onSaved: () => toast("已添加",{type: "success"}),
+    });
+}
+
+function openEidtEditor(ID){
+    const item = getState().items.find((i) => i.ID === ID);
+    if(!item){
+        toast("我想你可能失忆了",{type: "error"});
+        return;
+    }
+    openItemEditor({
+        mode:"edit",
+        item,
+        onSaved:(_save,meta) =>{
+            if(meta?.unchanged) return;
+            toast("已保存",{type:"success"});
+        }
+    });
 }
 
 // -------------------- 主页-----------------------
@@ -31,7 +61,7 @@ function renderHome() {
     addButton.dataset.action = "add-note";
     
     const nav = document.createElement("nav");
-    nav.className = "main-nav";
+    nav.className = "mini-nav";
     for (const { path, label } of NAV_ITEMS ) {
         const link = document.createElement("a");
         link.href = `#${path}`;
@@ -52,14 +82,8 @@ function renderItemsPage(route) {
   cleanupCurrentPage = mountItemsPage(app, {
     title: config.title,
     fixedTag: config.fixedTag,
-    onAdd: ({ tag }) => {
-      // 下一阶段：打开 itemEditor，传入预选分类
-      console.log("[TODO] 打开编辑器，预选分类:", tag);
-    },
-    onOpenItem: (ID) => {
-      // 下一阶段：打开 itemDetail
-      console.log("[TODO] 打开详情:", ID);
-    },
+    onAdd: ({ tag }) => openCreateEditor(tag),
+    onOpenItem: (ID) => openEidtEditor(ID),
   });
 }
 //------------------路由分发----------------
@@ -87,20 +111,17 @@ function render(route) {
 }
 
 
-// --------------全局委托-------------
+/* ---------------- 全局事件 ---------------- */
 
-app.addEventListener("click",(event) => {
-    if (!(event.target instanceof Element)) return;
-    const trigger = event.target.closest("[data-action]");
-    if(!trigger) return;
-
-    switch (trigger.dataset.action){
-        case "add-note":
-            window.alert("记录功能建设中...");
-            break;
-        default:
-            break;
-    }
+app.addEventListener("click", (event) => {
+  const trigger = event.target.closest("[data-action]");
+  if (!trigger) return;
+  // 列表页的「添加」由 itemsPage 自己处理，这里只接主页入口
+  if (trigger.dataset.action === "add-note") {
+    openCreateEditor("");
+  }
 });
 
-startRouter(render)
+/* ---------------- 启动 ---------------- */
+
+startRouter(render);
