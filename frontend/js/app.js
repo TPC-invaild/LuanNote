@@ -57,8 +57,46 @@ function renderHome() {
     const addButton = document.createElement("button");
     addButton.type = "button";
     addButton.className = "hero-button";
-    addButton.textContent = "想什么呢？"
+    const buttonLabel = document.createElement("span");
+    buttonLabel.className = "hero-button-label";
+    buttonLabel.textContent = "想什么呢？";
+    const rippleLayer = document.createElement("span");
+    rippleLayer.className = "hero-ripples";
+    rippleLayer.setAttribute("aria-hidden", "true");
+    addButton.append(rippleLayer, buttonLabel);
     addButton.dataset.action = "add-note";
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let lastRipple = -Infinity;
+    const rippleTimers = new Set();
+    function emitRipple(event) {
+        if (reducedMotion.matches || event.pointerType === "touch") return;
+        const now = performance.now();
+        if (now - lastRipple < 65) return;
+        lastRipple = now;
+        const rect = rippleLayer.getBoundingClientRect();
+        const ripple = document.createElement("span");
+        ripple.className = "hero-ripple";
+        ripple.style.left = `${(event.clientX - rect.left) / rect.width * 100}%`;
+        ripple.style.top = `${(event.clientY - rect.top) / rect.height * 100}%`;
+        rippleLayer.append(ripple);
+        // Bound the trail even during sustained pointer movement.
+        if (rippleLayer.children.length > 18) rippleLayer.firstElementChild.remove();
+        const timer = setTimeout(() => {
+            ripple.remove();
+            rippleTimers.delete(timer);
+        }, 1100);
+        rippleTimers.add(timer);
+    }
+    addButton.addEventListener("pointerenter", emitRipple);
+    addButton.addEventListener("pointermove", emitRipple);
+    cleanupCurrentPage = () => {
+        addButton.removeEventListener("pointerenter", emitRipple);
+        addButton.removeEventListener("pointermove", emitRipple);
+        for (const timer of rippleTimers) clearTimeout(timer);
+        rippleTimers.clear();
+        rippleLayer.replaceChildren();
+    };
     
     const nav = document.createElement("nav");
     nav.className = "main-nav";
