@@ -5,7 +5,8 @@
 
 
 import { TAG, STATUS,TAG_LABELS,STATUS_LABELS } from "../constant.js";
-import { create, update } from "../state/itemStore.js";
+import { create, update, remove } from "../state/itemStore.js";
+import { confirmDialog } from "./confirmDialog.js";
 
 let active = null;
 
@@ -24,6 +25,7 @@ function el(tag,className,text){
  * @param {object|null} [options.item]
  * @param {string} [options.initialTag]
  * @param {(save:object,meta:object) => void }[options.onSaved]
+ * @param {(item:object) => void} [options.onDelete]
  * @returns {{close: () => void } | null}
  */
 export function openItemEditor({
@@ -31,6 +33,7 @@ export function openItemEditor({
     item = null,
     initialTag = "",
     onSaved,
+    onDelete,
 } = {}){
     if(active) return null;
 
@@ -83,7 +86,7 @@ export function openItemEditor({
     const tagPlaceholder = document.createElement("option");
     tagPlaceholder.value = "";
     tagPlaceholder.textContent = "请选择分类";
-    
+
     tagSelect.append(tagPlaceholder);
 
     for(const value of Object.values(TAG)){
@@ -99,7 +102,7 @@ export function openItemEditor({
 
     //状态
     let statusField = null;
-    let statusSelect = null ; 
+    let statusSelect = null ;
     let statusError = null;
 
     if(isEdit){
@@ -126,12 +129,19 @@ export function openItemEditor({
     const formError = el("p","form-error");
 
     const actions = el("div","editor-actions");
+    const deleteButton = isEdit? el("button","btn-danger btn-delete","遗忘") : null;
+    if(deleteButton)deleteButton.type = "button";
+
+    const rightActions = el("div","editor-actions-right");
     const cancelButton = el("button","btn-secondary","取消");
     cancelButton.type = "button";
 
     const saveButton = el("button","btn-primary",isEdit? "保存":"添加");
     saveButton.type = "submit";
-    actions.append(cancelButton,saveButton);
+    rightActions.append(cancelButton,saveButton)
+
+    if(deleteButton)actions.append(deleteButton);
+    actions.append(rightActions);
     form.append(title,contactField,tagField);
     if(statusField)form.append(statusField);
     form.append(formError,actions);
@@ -208,6 +218,7 @@ export function openItemEditor({
         submitting = value;
         saveButton.disabled = value;
         cancelButton.disabled = value;
+        if(deleteButton) deleteButton.disabled = value;
         contactInput.readOnly = value;
         tagSelect.disabled = value;
         if(statusSelect) statusSelect.disabled = value;
@@ -224,7 +235,7 @@ export function openItemEditor({
 
     async function handleSubmit(event){
         event.preventDefault();
-        if(submitting) return;
+        if(submitting || closed) return;
 
         if(!validate()){
             if(contactError.textContent) contactInput.focus();
@@ -268,12 +279,63 @@ export function openItemEditor({
         }
     }
 
+    //删除
+    async function handleDelete(){
+        if(submitting || closed || !isEdit) return;
+        submitting = true;
+        let ok;
+        try {
+            ok = await confirmDialog({
+            title : "真的要遗忘它吗?",
+            message : "总有它记录的意义",
+            confirmText : "遗忘",
+            cancelText : "留下",
+            danger : true
+            });
+        } finally {
+            submitting = false;
+        }
+        if(closed) return;
+
+        if(!ok){
+            deleteButton?.focus();
+            return;
+        }
+
+        setSubmitting(true);
+        try{
+            await remove(item.ID);
+            close();
+            onDelete?.(item);
+        }catch(error){
+            setSubmitting(false);
+            showError(error);
+        }
+
+    }
+
     //关闭
-    function requestClose(){
-        if(submitting) return;
+    async function requestClose(){
+        if(submitting || closed) return;
         if(hasChange()){
-            const ok = window.confirm("这就不记了？");
-            if(!ok) return;
+            submitting = true;
+            let ok;
+            try {
+                ok = await confirmDialog({
+            title : "这就不记了吗?",
+            message : "胡思乱想也会在某一天发生想不到的作用",
+            confirmText : "没有记的必要",
+            cancelText : "写下此刻的心情",
+            danger : true
+                });
+            } finally {
+                submitting = false;
+            }
+            if(closed) return;
+            if(!ok) {
+                contactInput.focus();
+                return;
+            }
         }
         close();
     }
@@ -289,7 +351,7 @@ export function openItemEditor({
     /*---------事件--------*/
     form.addEventListener("submit",handleSubmit);
     cancelButton.addEventListener("click",requestClose);
-
+    if(deleteButton) deleteButton.addEventListener("click",handleDelete);
     //Esc
     dialog.addEventListener("cancel",(event) => {
         event.preventDefault();

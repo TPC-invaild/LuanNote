@@ -86,10 +86,95 @@
 .editor-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 10px;
   padding-top: 18px;
   border-top: 1px solid #e9dff0;
+}
+.editor-actions-right {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+}
+.btn-danger {
+  min-height: 44px;
+  padding: 10px 22px;
+  border: 1px solid #dbadc0;
+  border-radius: 999px;
+  background: #fff4f8;
+  color: #9b4163;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: background .18s, border-color .18s, box-shadow .18s;
+}
+.btn-danger:hover:not(:disabled) {
+  background: #fae4ee;
+  border-color: #bd7894;
+  box-shadow: 0 4px 14px #b56a8a18;
+}
+.btn-danger:active:not(:disabled) { background: #f4d7e4; }
+.btn-danger:focus-visible { outline: 2px solid #a34e74; outline-offset: 4px; }
+.btn-danger:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
+
+/* Native modal stays above the editor; rose accents distinguish deletion. */
+.confirm-dialog {
+  box-sizing: border-box;
+  width: min(92vw, 420px);
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  margin: auto;
+  padding: 28px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #e3d2e8;
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse at 100% 0%, #f8deec80, transparent 65%),
+    radial-gradient(ellipse at 0% 0%, #ede0fa80, transparent 60%),
+    #fffcff;
+  color: var(--ink, #39334f);
+  box-shadow: 0 24px 72px #47325838, inset 0 1px 0 #fff;
+}
+.confirm-dialog::backdrop {
+  background: #34264355;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.confirm-dialog[open] { animation: dream-editor-enter .2s ease-out; }
+.confirm-body { display: grid; gap: 16px; min-width: 0; }
+.confirm-title {
+  margin: 0;
+  color: #624569;
+  font-family: "Iowan Old Style", "Palatino Linotype", "Songti SC", serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: .035em;
+  overflow-wrap: anywhere;
+}
+.confirm-message {
+  margin: 0;
+  color: var(--muted, #726882);
+  font-size: 14px;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.confirm-message:empty { display: none; }
+.confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 18px;
+  border-top: 1px solid #e9ddea;
 }
 .field-error { margin: 0; min-height: 0; color: #a13f61; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .form-error {
@@ -169,10 +254,15 @@
   .editor-dialog { padding: 22px; border-radius: 22px; }
   .editor-form { gap: 18px; }
   .editor-title { font-size: 23px; }
-  .editor-actions > button { flex: 1 1 100px; }
+  .confirm-dialog { padding: 22px; border-radius: 20px; }
+  .confirm-actions > button { flex: 1 1 100px; }
+}
+@media (max-width: 380px) {
+  .editor-actions-right { width: 100%; }
+  .editor-actions-right > button { flex: 1 1 80px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .editor-dialog[open] { animation: none; }
-  .editor-textarea, .editor-select, .btn-primary, .btn-secondary, .toast { transition: none; }
+  .editor-dialog[open], .confirm-dialog[open] { animation: none; }
+  .editor-textarea, .editor-select, .btn-primary, .btn-secondary, .btn-danger, .toast { transition: none; }
   .toast { transform: none; }
 }

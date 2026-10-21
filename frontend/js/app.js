@@ -40,7 +40,8 @@ function openEditEditor(ID){
         onSaved:(_save,meta) =>{
             if(meta?.unchanged) return;
             toast("已保存",{type:"success"});
-        }
+        },
+        onDelete: () => toast("已遗忘",{type:"success"}),
     });
 }
 
