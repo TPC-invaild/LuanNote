@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LuanNote · 前端第四、五阶段逻辑说明</title><style>
+:root{--ink:#203047;--muted:#66758a;--line:#dce4eb;--accent:#176f70;--pale:#edf7f5}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:#f5f7fa;color:var(--ink);font:16px/1.8 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.layout{max-width:1380px;margin:auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px;padding:48px 40px}aside{position:sticky;top:32px;align-self:start}aside b{display:block;font-size:19px;margin-bottom:20px}nav a{display:block;padding:8px 12px;border-left:2px solid var(--line);font-size:14px}nav a:hover{background:var(--pale);border-color:var(--accent)}main{min-width:0;max-width:1000px}.eyebrow{font-size:12px;letter-spacing:3px;color:var(--accent);font-weight:700}h1{font-size:42px;line-height:1.25;margin:12px 0 20px;letter-spacing:-1px}h2{font-size:25px;margin:0 0 18px}h3{font-size:18px;margin:0 0 12px}p{margin:10px 0}.lead{font-size:18px;color:var(--muted);max-width:760px}.meta{font-size:13px;color:var(--muted);margin:22px 0 35px}section{background:white;border:1px solid var(--line);border-radius:16px;padding:30px;margin:0 0 24px}section h2 span{color:var(--accent);font-size:14px;margin-right:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.card{border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}.small{font-size:14px;color:var(--muted)}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{font-size:.88em;background:#eef2f6;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{background:#172638;color:#e4edf4;padding:20px;border-radius:10px;font-size:13px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}.note{border-left:3px solid var(--accent);background:var(--pale);padding:13px 17px;margin-top:18px;font-size:14px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}th{background:#f3f6f8;color:var(--muted);font-weight:600}th,td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}.flow{display:flex;align-items:stretch;gap:9px;margin:22px 0}.node{flex:1;border:1px solid #b9d8d4;border-radius:10px;background:var(--pale);padding:15px 10px;text-align:center;font-size:14px}.node strong{display:block}.node small{display:block;color:var(--muted);font-size:12px}.arrow{align-self:center;color:var(--accent);font-size:22px}.vertical{display:flex;flex-direction:column;align-items:center;gap:6px;margin:20px 0}.vertical .node{width:100%;max-width:560px}.branches{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:16px}.branch{text-align:center}.branch .node{height:calc(100% - 28px)}.label{font-size:12px;color:var(--muted)}.decision{border:1px dashed #a7884a;background:#fff8e8;border-radius:30px;padding:12px 28px;text-align:center;font-size:14px}.return{background:#eff3fb;border-color:#c5d3eb}.caption{color:var(--muted);font-size:12px;text-align:center}footer{font-size:13px;color:var(--muted);padding:10px 0 35px}ul{padding-left:22px}.pill{display:inline-block;font-size:12px;padding:3px 9px;border-radius:20px;background:var(--pale);color:var(--accent)}@media(max-width:1000px){.layout{grid-template-columns:170px minmax(0,1fr);gap:24px;padding:28px 20px}.grid{grid-template-columns:1fr}.flow{flex-direction:column}.arrow{transform:rotate(90deg)}}@media(max-width:700px){.layout{display:block;padding:20px 14px}aside{position:static;margin-bottom:28px}nav{display:flex;flex-wrap:wrap;gap:4px}nav a{padding:4px 9px}h1{font-size:32px}section{padding:22px 18px}.branches{grid-template-columns:1fr}td,th{padding:9px}}@media print{body{background:white;font-size:11pt}.layout{display:block;padding:0}aside{display:none}main{max-width:none}section{break-inside:avoid;border-radius:0;padding:20px}pre{background:#f3f5f8;color:#203047}h1{font-size:28pt}a{color:inherit}.grid{grid-template-columns:1fr}}
+</style></head><body>
+<div class="layout"><aside><b>LuanNote <span class="pill">Frontend · P4–5</span></b><nav aria-label="文档目录"><a href="#overview">01 · 模块与职责</a><a href="#routes">02 · 页面与列表</a><a href="#editor">03 · 打开编辑器</a><a href="#validation">04 · 校验与变化检测</a><a href="#save">05 · 提交与刷新</a><a href="#delete">06 · 删除与刷新</a><a href="#confirm">07 · 确认弹窗</a><a href="#close">08 · 放弃与恢复</a><a href="#toast">09 · 消息提示</a><a href="#data">10 · 状态与请求层</a><a href="#limits">11 · 样式与清理</a></nav></aside><main>
+<header><div class="eyebrow">CODE READING / 前端第四、五阶段</div><h1>保存、遗忘与留下：完整交互流程</h1><p class="lead">当前前端已串联列表、新建、编辑与删除。删除和放弃修改通过异步确认弹窗决定是否继续；共享状态负责写入后刷新，页面清理负责释放监听与计时器。</p><p class="meta">依据当前 frontend 源码整理 · 2026-10-22 · 中文伪代码与流程图 · 离线可读</p></header>
+<section id="overview"><h2><span>01</span>模块全景</h2><div class="flow"><div class="node"><strong>入口与页面</strong><small>选择条目 / 打开弹窗</small></div><div class="arrow">→</div><div class="node"><strong>编辑器</strong><small>校验 / 生成变更</small></div><div class="arrow">→</div><div class="node"><strong>Store 与 API</strong><small>写入 / 刷新列表</small></div><div class="arrow">→</div><div class="node"><strong>结果反馈</strong><small>更新列表 / 关闭 / 提示</small></div></div>
+<div class="table-wrap"><table><thead><tr><th>文件（相对 frontend）</th><th>当前职责</th></tr></thead><tbody><tr><td>index.html</td><td>#app 挂载点、ES Module 入口、移动端 viewport，加载浅色主题。</td></tr><tr><td>js/app.js</td><td>首页、路由分发、旧页面清理、新建与编辑入口、保存成功消息。</td></tr><tr><td>js/router.js</td><td>解析 Hash、默认首页与未知路径回退、监听 hashchange、提供 navigate。</td></tr><tr><td>js/pages/itemsPage.js</td><td>列表、分类与状态筛选、本地排序选择、点击和键盘操作、订阅与清理。</td></tr><tr><td>js/components/itemEditor.js</td><td>单实例原生 dialog，复用新建和编辑表单，处理校验、提交、取消、删除与焦点。</td></tr><tr><td>js/components/confirmDialog.js</td><td>返回 Promise&lt;boolean&gt; 的原生确认弹窗；处理确认、取消、Esc、背景点击和焦点恢复。</td></tr><tr><td>css/editor-dream.css</td><td>编辑器、确认弹窗、危险操作按钮和 Toast 的浅色样式。</td></tr><tr><td>js/components/toast.js</td><td>共享提示容器，显示消息、自动关闭与手动关闭。</td></tr><tr><td>js/state/itemStore.js</td><td>共享列表状态、订阅、请求序号、取消、排序、写入后刷新、getState。</td></tr><tr><td>js/api/items.js / js/api/http.js</td><td>条目接口映射，以及 fetch、序列化、超时、取消、响应与错误解析。</td></tr><tr><td>js/constant.js / js/config.js</td><td>枚举、中文标签、路由表、API 地址、超时与默认排序。</td></tr><tr><td>css/items-dream.css / css/items.css</td><td>浅色与深色列表及首页主题；当前加载浅色列表主题。</td></tr></tbody></table></div><div class="note">当前关键路径：点击卡片打开编辑器，编辑模式提供「遗忘」按钮；只有明确确认才调用删除。新建模式没有删除按钮，单条查询 API 仍未用于打开编辑器。</div></section>
+<section id="routes"><h2><span>02</span>页面启动与列表加载</h2><pre>index.html 加载 app.js
+查找 #app，不存在则抛出错误
+绑定首页添加按钮的事件委托
+startRouter(render)：监听 hashchange，并立即处理一次当前地址
+
+解析 Hash：去掉 #，为空则用 /，缺少 / 前缀则补全
+未知路径：replaceState 改为 #/，重新解析
+render(route)：
+    调用并清除上一页面的清理函数（首页或列表）
+    更新文档标题，滚动至顶部
+    home → 渲染首页
+    items → mountItemsPage，保存清理函数</pre>
+<div class="table-wrap"><table><thead><tr><th>Hash</th><th>页面</th><th>新建时预选分类</th></tr></thead><tbody><tr><td>#/</td><td>首页</td><td>空值，需要用户选择</td></tr><tr><td>#/todolist</td><td>固定 TODOLIST 列表</td><td>TODOLIST</td></tr><tr><td>#/imagination</td><td>固定 IMAGINATION 列表</td><td>IMAGINATION</td></tr><tr><td>#/total</td><td>全部条目，可选分类</td><td>当前分类下拉值，可能为空</td></tr></tbody></table></div>
+<div class="grid" style="margin-top:22px"><div class="card"><h3>挂载与渲染</h3><pre>构建页头、筛选栏与列表容器
+load({ tag: 页面分类, status: "" })
+subscribe(render) → 立即收到当前状态
+
+每次 render：
+    同步筛选与排序控件
+    清空列表容器
+    loading → 加载提示
+    否则 error → 错误与重试按钮
+    否则无 items → 空状态
+    否则 → 卡片集合</pre></div><div class="card"><h3>交互与清理</h3><pre>分类 / 状态变化 → setFilters → 网络加载
+排序变化 → setOrder → 本地排序
+重试 → refresh
+添加 → onAdd({ tag })
+卡片点击或焦点下 Enter / 空格 → onOpenItem(ID)
+
+离页：取消订阅 → cancelLoad
+      移除页面事件 → 清空容器</pre></div></div><p class="small">每次进入列表重置状态筛选为全部，排序沿用共享 Store。卡片显示内容、状态、时间；全部分类页另显示分类标签。文字通过 textContent 填入。</p></section>
+<section id="editor"><h2><span>03</span>编辑器如何打开</h2><div class="grid"><div class="card"><h3>新建入口</h3><pre>首页按钮 / 列表添加按钮：
+    openCreateEditor(initialTag)
+    openItemEditor(mode = create,
+                   initialTag,
+                   onSaved = 提示「已添加」)</pre></div><div class="card"><h3>编辑入口</h3><pre>点击卡片 → openEditEditor(ID)
+从 getState().items 查找相同 ID
+不存在 → 显示错误 Toast，结束
+存在 → openItemEditor(mode = edit, item)
+保存回调：
+    unchanged 为 true → 不提示
+    否则 → 提示「已保存」</pre></div></div>
+<div class="vertical"><div class="node">调用 openItemEditor(options)</div><div class="arrow">↓</div><div class="decision">已有 active 编辑器？</div><div class="branches"><div class="branch"><div class="label">是 ↓</div><div class="node return">返回 null，不重复打开</div></div><div class="branch"><div class="label">否 ↓</div><div class="node">编辑模式检查 item<br>记录当前焦点与初始值<br>创建 dialog 和 form<br>showModal → 聚焦内容末尾</div></div></div></div>
+<div class="table-wrap"><table><thead><tr><th>项目</th><th>新建 create</th><th>编辑 edit</th></tr></thead><tbody><tr><td>标题 / 提交按钮</td><td>添加笔记 / 添加</td><td>编辑笔记 / 保存</td></tr><tr><td>contact 初始值</td><td>空字符串</td><td>item.contact，缺失则为空</td></tr><tr><td>tag 初始值</td><td>initialTag 或空字符串</td><td>item.tag 或空字符串</td></tr><tr><td>status</td><td>固定 CREATE，无状态控件</td><td>显示状态选择器，缺失默认 CREATE</td></tr><tr><td>标识与时间</td><td>由后端生成</td><td>不提供 ID / time 编辑控件</td></tr></tbody></table></div><p class="small">编辑器挂载到 document.body；dialog 带可访问名称，label 关联对应控件。form.noValidate = true，由自定义逻辑处理校验。返回的 { close } 可用于程序化关闭。</p></section>
+<section id="validation"><h2><span>04</span>校验与变更：提交什么，不提交什么</h2><div class="grid"><div class="card"><h3>validate()</h3><pre>清空字段错误与表单错误
+contact ← 输入内容去除首尾空白
+contact 为空 → 内容错误
+tag 不在 TAG 枚举 → 分类错误
+编辑模式下 status 不在 STATUS 枚举 → 状态错误
+返回是否全部通过
+
+校验失败：
+    按 内容 → 分类 → 状态 的顺序
+    聚焦第一个错误字段，停止提交</pre></div><div class="card"><h3>buildPatch()</h3><pre>changes ← 空对象
+若 trim(内容) ≠ trim(初始内容)：
+    changes.contact ← trim(内容)
+若分类 ≠ 初始分类：
+    changes.tag ← 当前分类
+若状态 ≠ 初始状态：
+    changes.status ← 当前状态
+返回 changes</pre></div></div><div class="note">例如只把 CREATE 改成 DONE，PATCH 正文只有 <code>{"status":"DONE"}</code>。只改变内容首尾空白不算变更。编辑器负责比较新旧值，API 层再做可发送字段过滤。</div><h3 style="margin-top:22px">关闭前的 hasChange()</h3><pre>新建模式：内容 trim 后非空，或分类与初始分类不同 → 有改动
+编辑模式：内容 trim 后、分类、状态任意一项不同 → 有改动</pre><p class="small">无改动的编辑仍先经过校验；通过后直接关闭，并回调 unchanged: true，不写入、不刷新、不显示成功提示。</p></section>
+<section id="save"><h2><span>05</span>提交：写入完成后，等待刷新</h2><pre>handleSubmit(event)：
+    阻止表单默认提交
+    若 submitting → 忽略重复提交
+    若 validate 失败 → 聚焦错误字段，结束
+
+    编辑模式：
+        changes ← buildPatch()
+        若为空：关闭，回调 unchanged，结束
+        锁定表单
+        等待 Store.update(item.ID, changes)
+    新建模式：
+        锁定表单
+        等待 Store.create({ contact: trim(内容), tag, status: CREATE })
+
+    成功 → 关闭弹窗 → onSaved(结果, mode)
+    失败 → 解锁表单 → 展示错误并聚焦</pre>
+<div class="flow"><div class="node"><strong>锁定表单</strong><small>保存、取消、删除禁用<br>内容只读，选择器禁用</small></div><div class="arrow">→</div><div class="node"><strong>POST / PATCH</strong><small>写入后端</small></div><div class="arrow">→</div><div class="node"><strong>refresh()</strong><small>沿用当前筛选<br>重新获取列表</small></div><div class="arrow">→</div><div class="node"><strong>关闭与反馈</strong><small>回调 onSaved<br>显示成功 Toast</small></div></div>
+<div class="grid"><div class="card"><h3>写入失败</h3><p>Store 将写入错误抛给编辑器。弹窗保留输入，恢复按钮与控件，显示字段错误和整体错误，用户可以修改后重试。</p></div><div class="card"><h3>写入成功，刷新失败</h3><p>load 将刷新错误写入 state.error，不抛出。因此 Store 仍返回写入结果，编辑器关闭并显示成功提示；若当前列表仍挂载，会显示刷新错误和重试按钮。</p></div></div><p class="small">成功提示是在 refresh 结束后触发，不是在写入响应刚返回时触发。刷新使用现有筛选，因此新建或改分类后的条目不一定出现在当前列表。</p></section>
+<section id="delete"><h2><span>06</span>删除：先确认，再执行写入</h2><p>只在编辑模式显示「遗忘」。删除不要求当前表单校验通过，也不会保存尚未提交的内容；操作目标始终是原条目的 ID。</p><pre>handleDelete()：
+    若 submitting、closed 或不是编辑模式 → 结束
+    submitting = true，防止重复打开确认框
+    try：等待 confirmDialog(遗忘 / 留下)
+    finally：submitting = false
+    若编辑器已经关闭 → 结束
+    若用户没有确认：聚焦删除按钮，结束
+
+    setSubmitting(true)，禁用编辑器控件
+    尝试：
+        await Store.remove(item.ID)
+        close() 关闭编辑器
+        onDelete(item) → app 显示「已遗忘」
+    失败：
+        setSubmitting(false)
+        showError(error)，保留编辑器供重试</pre>
+<div class="vertical"><div class="node">点击「遗忘」</div><div class="arrow">↓</div><div class="decision">等待确认结果</div><div class="branches"><div class="branch"><div class="label">false ↓</div><div class="node return">留下笔记<br>回到编辑器，不请求删除</div></div><div class="branch"><div class="label">true ↓</div><div class="node">DELETE /items/{ID}<br>成功 → refresh → 关闭 → Toast<br>失败 → 解锁 → 错误提示</div></div></div></div>
+<div class="note">Store.remove 等待 DELETE 后再等待 refresh。删除成功但刷新失败时，删除仍返回成功，列表通过 state.error 显示刷新失败；不会把已经成功的删除当作失败重复执行。</div></section>
+<section id="confirm"><h2><span>07</span>确认弹窗：布尔结果只有一条出口</h2><div class="grid"><div><h3>创建与结算</h3><pre>confirmDialog(options) 返回 Promise：
+    settled = false，result = false
+    记录当前焦点
+    创建 dialog、标题、消息、取消和确认按钮
+    danger 决定确认按钮的样式类
+    挂载到 body，showModal()
+    默认聚焦取消按钮
+
+close(value)：
+    已 settled → 不重复处理
+    settled = true，result = value
+    dialog.close()
+
+收到 close 事件：
+    settled = true
+    移除弹窗，尝试恢复原焦点
+    resolve(result)</pre></div><div><h3>动作与结果</h3><div class="table-wrap"><table><thead><tr><th>用户动作</th><th>返回值</th></tr></thead><tbody><tr><td>点击确认按钮</td><td>true</td></tr><tr><td>点击取消按钮</td><td>false</td></tr><tr><td>按 Esc</td><td>false，阻止默认动作后统一关闭</td></tr><tr><td>点击弹窗矩形外部</td><td>false</td></tr><tr><td>点击弹窗内部空白</td><td>不关闭</td></tr><tr><td>未设置结果而直接关闭</td><td>默认 false</td></tr></tbody></table></div></div></div><p class="small">背景点击先检查 event.target 是否就是 dialog，再用点击坐标与 getBoundingClientRect 判断是否在矩形外。Promise 在 close 事件中完成，不在按钮点击瞬间完成。</p><div class="note">确认组件自身没有全局单例锁。当前编辑器在 await 期间用 submitting 阻止重复操作；showModal 使下层编辑器暂时无法交互。等待确认时没有调用 setSubmitting，因此不切换按钮文案或 disabled 状态。</div></section>
+<section id="close"><h2><span>08</span>放弃修改、错误恢复与焦点</h2><div class="grid"><div><h3>用户取消 / Esc</h3><pre>点击取消，或拦截编辑器的 Esc：
+    requestClose()
+
+requestClose()：
+    submitting 或 closed → 结束
+    若有未保存改动：
+        submitting = true
+        try：等待确认弹窗
+            「没有记的必要」→ true
+            「写下此刻的心情」→ false
+        finally：submitting = false
+        已关闭 → 结束
+        false → 聚焦内容框，保留草稿，结束
+    close()
+
+close()：
+    已关闭 → 结束
+    closed = true，active = null
+    dialog.close()
+close 事件 → 移除编辑器，尝试恢复初始焦点</pre></div><div><h3>错误恢复</h3><pre>写入失败：
+    恢复保存、取消、删除按钮
+    内容恢复可编辑，选择器解除禁用
+    fieldErrors 显示在对应字段
+    formError 显示整体错误
+    按 内容 → 分类 → 状态 聚焦错误字段
+
+内容 input：清除内容与表单错误
+分类 / 状态 change：清除对应字段错误
+再次保存：重新清空旧错误并校验</pre><p>无改动时，取消直接关闭。确认框中按 Esc 只取消本次放弃操作，编辑器仍然保留。</p></div></div><div class="note">对外返回的 close() 仍是直接关闭能力，不经过确认，也不会取消进行中的写入。用户点击取消或按 Esc 才经过 requestClose。焦点恢复可能遇到原列表卡片已被刷新替换的情况。</div></section>
+<section id="toast"><h2><span>09</span>Toast：共享容器，多条独立消息</h2><pre>toast(message, { type = info, duration = 3000 })：
+    获取共享容器；若不在 body 中则重新创建
+    容器 role = status，aria-live = polite
+    创建消息节点，设置文本与 toast-{type} 类
+    下一动画帧：若尚未关闭，添加 toast-visible
+    启动 duration 毫秒计时器
+
+remove()：
+    若已经移除中 → 结束
+    标记 removed，移除 toast-visible
+    transitionend 时移除节点
+    同时设置 300 毫秒兜底移除
+
+点击消息 / 调用返回的关闭函数：
+    清除主计时器，再执行 remove()</pre><div class="flow"><div class="node"><strong>创建消息</strong><small>复用容器</small></div><div class="arrow">→</div><div class="node"><strong>添加显示类</strong><small>下一动画帧</small></div><div class="arrow">→</div><div class="node"><strong>超时或手动关闭</strong><small>移除显示类</small></div><div class="arrow">→</div><div class="node"><strong>删除节点</strong><small>过渡结束或 300ms</small></div></div><p class="small">每条消息分别计时；空容器保留以便复用。当前 editor-dream.css 已提供 Toast 容器定位、显示过渡及成功／错误配色。</p></section>
+<section id="data"><h2><span>10</span>底层状态与请求仍如何工作</h2><div class="table-wrap"><table><thead><tr><th>Store 状态</th><th>含义</th></tr></thead><tbody><tr><td>items / loading / error</td><td>列表数据、请求状态、失败时的 message 与 status。</td></tr><tr><td>filters</td><td>tag 与 status，空字符串表示全部。</td></tr><tr><td>order</td><td>默认 ORDER.NEWEST；ORDER.OLDEST 为最早优先。</td></tr><tr><td>hasLoaded</td><td>有效请求成功或失败后置 true；当前页面不依赖它选择渲染分支。</td></tr></tbody></table></div>
+<div class="grid" style="margin-top:22px"><div class="card"><h3>加载与防止旧结果覆盖</h3><pre>load(overrides)：
+    取消旧请求，创建新控制器
+    seq ← ++requestSeq
+    合并 filters，设置 loading，清空 error
+    请求 itemApi.list
+    成功且 seq 仍有效：排序后更新 items
+    主动取消 / seq 过期：忽略
+    其他失败：记录 error，结束 loading
+
+cancelLoad()：
+    增加序号，使旧结果失效
+    取消请求并清空控制器引用
+    loading = false</pre></div><div class="card"><h3>状态读取与发布</h3><pre>subscribe(listener)：加入集合，立即通知
+setState(patch)：浅合并状态，通知订阅者
+getState()：返回当前状态对象本身
+
+setFilters → 重新请求
+setOrder → 复制 items，按 time 字符串排序
+refresh → 沿用 filters 重新请求
+create / update / remove → 写入后 refresh</pre><p class="small">getState 不是不可变快照。当前编辑入口只从中查找条目，不直接修改对象。</p></div></div>
+<div class="table-wrap" style="margin-top:22px"><table><thead><tr><th>条目 API</th><th>映射与约束</th></tr></thead><tbody><tr><td>list / get</td><td>GET /items，非空 tag/status 放入查询参数；GET /items/{ID}。</td></tr><tr><td>create</td><td>POST /items；发送 contact、tag 和可选 status，不发送 ID/time。</td></tr><tr><td>patch</td><td>PATCH /items/{ID}；只保留 contact/tag/status 的非 null、非 undefined 值；过滤后为空则本地报 400。</td></tr><tr><td>remove</td><td>DELETE /items/{ID}；204 返回 null，编辑模式「遗忘」按钮经确认后触发。</td></tr></tbody></table></div>
+<pre>HTTP request：
+    拼 URL，按需序列化 JSON 并设置 Content-Type
+    合并外部取消信号与超时信号 → fetch
+    204 / 成功空正文 → null
+    成功正文 → JSON.parse
+    失败响应 → 读取 detail → ApiError
+        detail 数组：按 loc 汇总 fieldErrors 与 message
+        detail 字符串：直接作为 message
+        无可用 detail：按状态码提供默认文案
+    捕获错误优先级：
+        外部取消 → CanceledError
+        超时 → ApiError(status = 0)
+        已有 ApiError → 原样抛出
+        其他 → 网络错误
+    finally：清计时器与信号监听</pre><p class="small">计时器覆盖响应正文读取。写入错误原样到达编辑器，可显示 fieldErrors；列表加载仅将 message/status 保存到 state.error。</p></section>
+<section id="limits"><h2><span>11</span>样式、首页动效与实现边界</h2><div class="table-wrap"><table><thead><tr><th>配置 / 文件</th><th>当前值与作用</th></tr></thead><tbody><tr><td>API_BASE / REQUEST_TIMEOUT</td><td>http://127.0.0.1:8001；10000 毫秒。跨源时需要后端允许前端来源。</td></tr><tr><td>ORDER</td><td>NEWEST: newest（默认）；OLDEST: oldest。</td></tr><tr><td>TAG</td><td>TODOLIST → 待办；IMAGINATION → 想法。</td></tr><tr><td>STATUS</td><td>CREATE、RUNNING、DONE、CANCEL、FAILED，对应待开始、进行中、已完成、已取消、已失败。</td></tr><tr><td>items-dream.css</td><td>已加载：首页、列表、按钮波纹及响应式布局。</td></tr><tr><td>editor-dream.css</td><td>已加载：编辑器、确认框、删除按钮和 Toast；支持窄屏与减少动态效果。</td></tr><tr><td>items.css</td><td>备用深色主题，当前 HTML 未加载。</td></tr></tbody></table></div>
+<h3 style="margin-top:22px">首页波纹：创建与释放成对出现</h3><pre>pointerenter / pointermove → emitRipple(event)
+若用户偏好减少动态效果，或触摸指针 → 结束
+距上次生成不足 65ms → 结束
+用指针相对图层的位置计算百分比坐标
+添加一个 ripple 节点
+节点超过 18 个 → 移除最早的节点
+设定 1100ms 计时器：移除节点并从 Set 删除计时器
+
+首页 cleanupCurrentPage：
+    移除两个指针事件监听
+    清除 Set 中全部计时器
+    清空 Set 与波纹图层</pre><div class="flow"><div class="node"><strong>离开当前路由</strong><small>app.render</small></div><div class="arrow">→</div><div class="node"><strong>执行清理</strong><small>首页：监听与计时器<br>列表：订阅与请求</small></div><div class="arrow">→</div><div class="node"><strong>清空清理引用</strong><small>避免重复调用</small></div><div class="arrow">→</div><div class="node"><strong>渲染下一页</strong><small>保存新的清理函数</small></div></div>
+<ul><li><strong>弹窗与路由清理独立：</strong>编辑器和确认框位于 body 下，未纳入页面清理函数；cancelLoad 仅取消列表读取，不取消写入。</li><li><strong>编辑依据缓存：</strong>getState 返回当前共享状态对象，打开编辑器不重新查询单条数据；没有版本冲突检测。</li><li><strong>筛选继续生效：</strong>写入后 refresh 沿用当前筛选，修改分类或状态可能使条目离开当前列表。</li><li><strong>提交中共用文案：</strong>删除调用 setSubmitting(true) 时，保存按钮也会显示「保存中...」；这是当前代码的实际表现。</li><li><strong>状态只在内存：</strong>没有自动保存草稿、前端持久化、分页或独立详情页。</li></ul><div class="note">推荐阅读顺序：app → itemsPage → itemEditor → confirmDialog → itemStore → api/items → api/http → toast。删除与放弃修改的确认都不会直接操作后端，实际删除由编辑器在拿到 true 后触发。</div></section>
+<footer>LuanNote · Frontend Phase 4–5 · 对当前源码的说明；本次未修改应用代码。</footer></main></div>
+</body></html>
