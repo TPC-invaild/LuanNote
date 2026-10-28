@@ -5,6 +5,8 @@
 
 import { subscribe,load, setFilters,setOrder,refresh,cancelLoad } from "../state/itemStore.js";
 
+import { groupItems, GROUP_LABELS } from "../utils/itemGroups.js";
+
 import {TAG,TAG_LABELS,STATUS,STATUS_LABELS,ORDER,ORDER_LABELS} from "../constant.js"
 
 /*----------小工具 ------------- */
@@ -55,6 +57,10 @@ function formatTime(value){
 export function mountItemsPage(container, options={}){
     const {title = "列表", fixedTag = null, onAdd, onOpenItem} = options;
     const pageTag = fixedTag ?? "";
+    let groupMode = "day";
+    let latestState;
+    let defaultExpanded = true;
+    const expandedGroups = new Map();
 
     container.replaceChildren();
 
@@ -105,8 +111,24 @@ export function mountItemsPage(container, options={}){
 
     toolbar.append(field("排序", orderSelect));
 
+    const groupSelect = el("select", "filter-select");
+    groupSelect.dataset.filter = "group";
+    for (const [value, label] of Object.entries(GROUP_LABELS)) {
+        groupSelect.append(option(value, `按${label}`));
+    }
+    toolbar.append(field("时间分组", groupSelect));
+
+    const groupActions = el("div", "group-actions");
+    for (const [action, label] of [["expand", "全部展开"], ["collapse", "全部收拢"]]) {
+        const button = el("button", "btn-retry", label);
+        button.type = "button";
+        button.dataset.action = action;
+        groupActions.append(button);
+    }
+    const summary = el("p", "items-summary");
+    summary.setAttribute("aria-live", "polite");
     const listEl = el("div","items-list");
-    root.append(headers,toolbar,listEl);
+    root.append(headers,toolbar,groupActions,summary,listEl);
     container.append(root);
 
     /*-----首次加载------- */
@@ -118,6 +140,9 @@ export function mountItemsPage(container, options={}){
     const unsubscribe = subscribe(render);
 
     function render (state) {
+        latestState = state;
+        summary.textContent = "";
+        groupActions.hidden = state.loading || !!state.error || state.items.length === 0;
         statusSelect.value = state.filters.status;
         if(tagSelect) tagSelect.value = state.filters.tag;
         orderSelect.value = state.order;
@@ -140,7 +165,23 @@ export function mountItemsPage(container, options={}){
         }
 
         const fragment = document.createDocumentFragment();
-        for(const item of state.items) fragment.append(renderCard(item));
+        const completed = state.items.filter(item => item.status === STATUS.DONE).length;
+        summary.textContent = `当前筛选：已完成 ${completed} / ${state.items.length} 项（按创建时间分组）`;
+        for (const group of groupItems(state.items, groupMode)) {
+            const details = el("details", "item-group");
+            const key = `${groupMode}:${group.key}`;
+            details.open = expandedGroups.get(key) ?? defaultExpanded;
+            const heading = el("summary", "item-group-heading");
+            heading.append(el("span", "item-group-label", group.label),
+                el("span", "item-group-count", `已完成 ${group.completed} / ${group.items.length} 项`));
+            const cards = el("div", "item-group-cards");
+            for (const item of group.items) cards.append(renderCard(item));
+            details.append(heading, cards);
+            details.addEventListener("toggle", () => {
+                if (root.contains(details)) expandedGroups.set(key, details.open);
+            });
+            fragment.append(details);
+        }
         listEl.append(fragment);
     }
 
@@ -218,6 +259,15 @@ export function mountItemsPage(container, options={}){
                 onAdd?.({tag: currentAddTag()});
                 return;
             }
+            if (action === "expand" || action === "collapse") {
+                defaultExpanded = action === "expand";
+                expandedGroups.clear();
+                for (const group of groupItems(latestState.items, groupMode)) {
+                    expandedGroups.set(`${groupMode}:${group.key}`, defaultExpanded);
+                }
+                render(latestState);
+                return;
+            }
             if(action === "retry") {
                 refresh();
                 return;
@@ -249,7 +299,11 @@ export function mountItemsPage(container, options={}){
             return;
         }
 
-        if(filter === "status") setFilters({status:select.value});
+        if (filter === "group") {
+            groupMode = select.value;
+            render(latestState);
+        }
+        else if(filter === "status") setFilters({status:select.value});
         else if(filter === "tag") setFilters({tag:select.value});
         else if(filter === "order") setOrder(select.value);
     }

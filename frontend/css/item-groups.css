@@ -1,0 +1,15 @@
+.group-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.group-actions[hidden] { display: none; }
+.items-summary { color: var(--muted); font-size: 14px; line-height: 1.6; }
+.item-group { min-width: 0; border: 1px solid var(--line); border-radius: 12px; }
+.item-group-heading { padding: 18px 20px; cursor: pointer; color: inherit; overflow-wrap: anywhere; }
+.item-group-heading::marker { color: var(--purple, var(--cyan)); }
+.item-group-heading:focus-visible { outline: 3px solid var(--purple, var(--cyan)); outline-offset: 3px; }
+.item-group-label { font-weight: 600; }
+.item-group-count { display: inline-block; margin-left: 16px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.item-group-cards { display: grid; gap: 16px; padding: 0 16px 16px; }
+@media (max-width: 600px) {
+  .item-group-heading { padding: 16px 12px; }
+  .item-group-count { display: block; margin: 8px 0 0 18px; }
+  .item-group-cards { padding: 0 8px 8px; }
+}
