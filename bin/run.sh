@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
 if [[ -n "${VIRTUAL_ENV:-}" && -x "$VIRTUAL_ENV/bin/python" ]]; then
     python_bin="$VIRTUAL_ENV/bin/python"
@@ -37,4 +37,4 @@ for name, lower, upper in [("fastapi", (0, 115), (1,)), ("pydantic", (2, 9), (3,
     echo "正在安装项目依赖（需要联网）……"
     "$python_bin" -m pip install -r requirements.txt
 fi
-exec "$python_bin" scripts/run.py "$@"
+exec "$python_bin" bin/run.py "$@"

@@ -1,5 +1,5 @@
 #!/bin/bash
-cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")" || exit 1
 ./run.sh "$@"
 status=$?
 if [[ $status -ne 0 ]]; then

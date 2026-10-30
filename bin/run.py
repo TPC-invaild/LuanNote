@@ -1,6 +1,7 @@
 """Start and supervise the local API and static frontend."""
 import argparse
 import json
+import os
 from pathlib import Path
 import signal
 import socket
@@ -23,7 +24,10 @@ def main():
     def stop(signum, frame):
         raise KeyboardInterrupt
 
-    for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+    stop_signals = [signal.SIGINT, signal.SIGTERM]
+    if hasattr(signal, "SIGHUP"):
+        stop_signals.append(signal.SIGHUP)
+    for sig in stop_signals:
         signal.signal(sig, stop)
     try:
         for port in (8001, 5501):
@@ -33,7 +37,7 @@ def main():
                 except OSError as exc:
                     raise RuntimeError(f"端口 {port} 无法使用，请先停止占用该端口的服务：{exc}") from exc
 
-        paths = json.loads((ROOT / "backend/share/dataPath.json").read_text())["Item"]
+        paths = json.loads((ROOT / "backend/share/dataPath.json").read_text(encoding="utf-8"))["Item"]
         for path in paths.values():
             (ROOT / path).parent.mkdir(parents=True, exist_ok=True)
 
@@ -41,8 +45,12 @@ def main():
             [sys.executable, "-m", "uvicorn", "backend.main:app", "--host", "127.0.0.1", "--port", "8001"],
             [sys.executable, "-m", "http.server", "5501", "--bind", "127.0.0.1", "--directory", str(ROOT / "frontend")],
         ]
+        process_options = (
+            {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+            if os.name == "nt" else {"start_new_session": True}
+        )
         for command in commands:
-            children.append(subprocess.Popen(command, cwd=ROOT, start_new_session=True))
+            children.append(subprocess.Popen(command, cwd=ROOT, **process_options))
 
         opener = build_opener(ProxyHandler({}))
         pending = {"http://127.0.0.1:8001/items", "http://127.0.0.1:5501/"}
@@ -78,7 +86,7 @@ def main():
         print(f"启动失败：{exc}", file=sys.stderr)
         return 1
     finally:
-        for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+        for sig in stop_signals:
             signal.signal(sig, signal.SIG_IGN)
         for child in children:
             if child.poll() is None:
